@@ -2,13 +2,55 @@
 
 Some functions to make Google APIs more accesible using Pandas. 
 
-## Steps
+## What will you achieve with this bunch of functions?
 
-1. Create google service account 
-    1. Go to https://console.developers.google.com/projectselector/apis/credentials
-    2. Create new project
-    3. Share the file you want to access with the service "account" :
-        first-service-account@example-id-175820.iam.gserviceaccount.com
+* How to create a pandas.dataframe from a Google Sheets.
+* How to upload a pandas.dataframe to Google Sheets.
+* How to retrieve sheet names from a Google Sheet.
+
+
+## First steps
+
+0. Install requirements
+    '''pip install -r requirements.txt'''
+
+0. Or install manually:
+    '''
+    pip install google-api-python-client
+    pip install httplib2
+    pip install oauth2client
+    pip install jupyter notebook
+    '''
+    
+
+
+## Steps to use google Sheets API
+
+0. Create google service account.
+    0. Go to https://console.developers.google.com/projectselector/apis/credentials and create a new project.
+    ![Create a developers project](img/create_project.PNG)
+    
+    0. Create credentials.
+    ![Create a developers project](img/choose_credentials.PNG)
+        * In this first version, i will explain how to deal with Services accounts, so select "Service account key".
+    
+    0. Create a service account.
+    ![Create a developers project](img/create_service_account.PNG)
+        * Download the .json file and KEEP IT SAFE.
+    
+    0. Now you have your service account created inside your new project.
+    ![Create a developers project](img/create_service_account.PNG)
+    
+    0. Copy your "user id" in "Manage service accounts" to use it later.
+        * It looks like this one: "first-service-account@example-id-175820.iam.gserviceaccount.com"
+        
+    0. Change in the file config.ini the path of the credentials .json.
+    ![Create a developers project](img/change_config.PNG)
+    
+    0. Go to your dashboard screen and go to "ENABLE APIS AND SERVICES" to "unlock" the desired API calls.
+    In our example, we will just enable "Google sheets API".
+    ![Create a developers project](img/enable_apis.PNG)
+    ![Create a developers project](img/activate_sheets.PNG)
 
 
 ## Motivation
@@ -18,28 +60,12 @@ I've been working with some Google APIs and I would like to share what I've lear
 
 I wanted to use Google APIs to develop a dashboard to analize and display data from Google Analytics, Google SearchConsole and Google Drive.
 
-After retrieve the data, we can modify, filter, compare, delete and work with it 
+After retrieve the data, we can modify, filter, compare, delete and work with it.
 
-## APIs used
+### APIs used
 * Sheets
-* Analytics
-* SearchConsole
-* ... Someday
 
 
-## Auth
-There are two ways of authenticating to be able to make Google API calls.
-* By redirecting the user to the web browser and then Log-in (the typical) within the account you want to use de data.
-* By creating a Google service and download its credentials.json.
+### Auth
 
-### When use client auth
-If you are developing tools to deploy it in a computer with graphical env.
-Is the easier to start and have full access to the info.
-
-### When use Google service account
-* If you want your API (or someones external API) to have access to only the services you want. IE: You built an API to read each morning your boss "todo today" document. In order to read it he can add _readonly_ permisions to the desired file to your service account. 
-
-## Service accounts
-
-#### Furhter information
-
+By now I explain only how to connect via Google services accounts. 
