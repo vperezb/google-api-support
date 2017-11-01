@@ -15,7 +15,7 @@ def get_configs(CONFIG_PATH):
 def start_service(Config, SERVICE_ID):
     credentials = ServiceAccountCredentials.from_json_keyfile_name(
         Config.get("Credentials", 'secretsPath'), 
-        scopes='https://www.googleapis.com/auth/' + Config.get(SERVICE_ID, 'url_path')
+        scopes= Config.get(SERVICE_ID, 'base_url')
     )
     service = build(
         Config.get(SERVICE_ID, "build"),
