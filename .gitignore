@@ -2,6 +2,9 @@
 .*
 !.gitignore
 
+# Credentials
+.credentials
+
 # Python
 *.pyc
 __pycache__/

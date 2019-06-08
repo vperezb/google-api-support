@@ -1,31 +1,4 @@
-from oauth2client.service_account import ServiceAccountCredentials
-from apiclient.discovery import build
-from httplib2 import Http
 import pandas as pd
-import os
-import configparser
-
-def get_configs(CONFIG_PATH):
-    parserconfig = configparser.ConfigParser()
-    parserconfig.read(os.path.join("./" , CONFIG_PATH))
-    return parserconfig
-
-# Start service using a GoogleService
-
-def start_service(Config, SERVICE_ID):
-    credentials = ServiceAccountCredentials.from_json_keyfile_name(
-        Config.get("Credentials", 'secretsPath'), 
-        scopes= Config.get(SERVICE_ID, 'base_url')
-    )
-    service = build(
-        Config.get(SERVICE_ID, "build"),
-        Config.get(SERVICE_ID, "version"),
-        http=credentials.authorize(Http()),
-        cache_discovery=False
-    )
-    return service
-
-# Start service with web browser authentication
 
 
 def change_sheet_title(service, newFileName, fileId):
