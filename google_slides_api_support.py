@@ -1,5 +1,7 @@
 import json
 
+import google_api_support as gs
+
 class Size:
     def __init__(self, width: float = 3000000.0, height: float = 3000000.0, unit: str = 'EMU'):
         self.json = {
@@ -12,13 +14,13 @@ class Size:
                 "unit": unit
             }
         }
-     
+
     def __repr__(self):
         return json.dumps(self.json, indent=4)
 
 
 class Transform:
-    def __init__(self, scale_x: float = 1, scale_y: float = 1, shear_x: float=0, shear_y: float = 0,
+    def __init__(self, scale_x: float = 1, scale_y: float = 1, shear_x: float = 0, shear_y: float = 0,
                  translate_x: float = 0, translate_y: float = 0, unit: str = 'EMU'):
         self.json = {
             "scaleX": scale_x,
@@ -26,26 +28,28 @@ class Transform:
             "shearX": shear_x,
             "shearY": shear_y,
             "translateX": translate_x,
-            "translateY":  translate_y,
+            "translateY": translate_y,
             "unit": unit
         }
-     
+
     def __repr__(self):
         return json.dumps(self.json, indent=4)
 
 
-def create_presentation(service, name):
+def create_presentation(name):
+    service = gs.get_service("slides")
     presentation = service.presentations().create(body={"title": name}).execute()
     return presentation['presentationId']
 
 
-def presentation_info(service, presentation_id):  # Class ??
+def presentation_info(presentation_id):  # Class ??
+    service = gs.get_service("slides")
     presentation = service.presentations().get(
         presentationId=presentation_id).execute()
     return presentation
 
 
-def presentation_slides(presentation_id):s
+def presentation_slides(presentation_id):
     slides = presentation_info(presentation_id).get('slides')
     return slides
 
@@ -63,33 +67,34 @@ def slide_notes(slide_object: dict):
         return '# Error in slide' + str(e)
 
 
-def execute_batch_update(service, requests, presentation_id):
-
+def execute_batch_update(requests, presentation_id):
     body = {
         'requests': requests
     }
 
+    slides_service = gs.get_service("slides")
     response = slides_service.presentations().batchUpdate(presentationId=presentation_id,
                                                           body=body).execute()
     return response
 
 
-def text_replace(service, old: str, new: str, presentation_id: str, pages: list = []):
-    
+def text_replace(old: str, new: str, presentation_id: str, pages: list = []):
+    service = gs.get_service("slides")
+
     service.presentations().batchUpdate(
         body={
 
-                "requests": [
-                    {
-                        "replaceAllText": {
-                            "containsText": {
-                                "text": old
-                            },
-                            "replaceText": new,
-                            "pageObjectIds": pages,
-                        }
+            "requests": [
+                {
+                    "replaceAllText": {
+                        "containsText": {
+                            "text": '{{' + old + '}}'
+                        },
+                        "replaceText": new,
+                        "pageObjectIds": pages,
                     }
-                ]
+                }
+            ]
         },
         presentationId=presentation_id
     ).execute()
@@ -116,7 +121,7 @@ def batch_text_replace(text_mapping: dict, presentation_id: str, pages: list = l
     return execute_batch_update(requests, presentation_id)
 
 
-def insert_image(url: str, page_id: str, presentation_id: str, object_id: str=None,
+def insert_image(url: str, page_id: str, presentation_id: str, object_id: str = None,
                  transform=None, size=None):
     requests = [
         {
@@ -131,7 +136,7 @@ def insert_image(url: str, page_id: str, presentation_id: str, object_id: str=No
             }
         },
     ]
-    
+
     return execute_batch_update(requests, presentation_id)
 
 
@@ -142,7 +147,7 @@ def replace_image(page_id: str, presentation_id: str, old_image_object: dict, ne
     delete_object(presentation_id, old_image_object['objectId'])
 
 
-def replace_shape_with_image(url: str, presentation_id: str, contains_text: str=None):
+def replace_shape_with_image(url: str, presentation_id: str, contains_text: str = None):
     requests = [
         {
             "replaceAllShapesWithImage": {
@@ -208,7 +213,7 @@ def delete_object(presentation_id: str, object_id: str = None):
     body = {
         'requests': requests
     }
-    
+
     service = gs.get_service("slides")
     response = service.presentations().batchUpdate(presentationId=presentation_id,
                                                    body=body).execute()
@@ -217,9 +222,9 @@ def delete_object(presentation_id: str, object_id: str = None):
 
 def batch_delete_object(presentation_id: str, object_id_list: list = None):
     requests = []
-    
+
     for element in object_id_list:
-        requests.append(    
+        requests.append(
             {
                 'deleteObject': {
                     'objectId': element
@@ -322,7 +327,7 @@ def copy_file(file_from_id, new_file_name=''):
     body = {'name': new_file_name}
 
     service = gs.get_service("drive")
-    drive_response = service.files().copy(fileId=file_from_id, 
+    drive_response = service.files().copy(fileId=file_from_id,
                                           body=body,
                                           supportsTeamDrives=True,
                                           ).execute()
@@ -346,7 +351,7 @@ def upload_image_to_drive(image_name: str, image_file_path: str, folder_destinat
     # Copy the image to destination if passed
     if not folder_destination_id:
         move_file(file_id=file_id, folder_destination_id=folder_destination_id)
-    
+
     return {'image_url': image_url, 'file_id': file_id}
 
 
@@ -408,7 +413,7 @@ def get_folder_id_by_path(path, team_drive_id):
                     response['id'] for response in folders_in_folder if response['name'] == level][0]
             else:
                 print('Creating folder {} inside parent folder {} with folder id = {}'.format(
-                        level, last_level, parent_folder))
+                    level, last_level, parent_folder))
                 parent_folder = create_folder(level, [parent_folder])['id']
         last_level = level
     return parent_folder
