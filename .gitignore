@@ -24,3 +24,7 @@ Env/
 
 # Pycharm
 .idea/
+
+# Pypi files
+build/
+dist/
