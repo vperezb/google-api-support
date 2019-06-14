@@ -1,6 +1,6 @@
-# google-api-python-tools
+# google-api-support
 
-Some functions to make Google APIs more accesible using Pandas. 
+Some functions to make Google APIs more usable. 
 
 ## What will you achieve with this bunch of functions?
 
