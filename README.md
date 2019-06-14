@@ -14,16 +14,6 @@ Some functions to make Google APIs more accesible using Pandas.
 0. Install requirements
     '''pip install -r requirements.txt'''
 
-0. Or install manually:
-    '''
-    pip install google-api-python-client
-    pip install httplib2
-    pip install oauth2client
-    pip install jupyter notebook
-    '''
-    
-
-
 ## Steps to use google Sheets API
 
 0. Create google service account.
@@ -53,19 +43,7 @@ Some functions to make Google APIs more accesible using Pandas.
     ![Create a developers project](img/activate_sheets.PNG)
 
 
-## Motivation
-I've been working with some Google APIs and I would like to share what I've learned.
+## Where to place credentials file inside the project:
 
-[READ _RAW_ DATA] - [WORK WITH DATA] - [CREATE VALUABLE DATA] - [DISPLAY DATA]
+Create a folder named `.Credentials` and store them in `service_credentials`
 
-I wanted to use Google APIs to develop a dashboard to analize and display data from Google Analytics, Google SearchConsole and Google Drive.
-
-After retrieve the data, we can modify, filter, compare, delete and work with it.
-
-### APIs used
-* Sheets
-
-
-### Auth
-
-By now I explain only how to connect via Google services accounts. 
