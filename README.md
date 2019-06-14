@@ -21,32 +21,32 @@ Some functions to make Google APIs more usable.
 
 0. Create google service account.
     0. Go to https://console.developers.google.com/projectselector/apis/credentials and create a new project.
-    ![Create a developers project](img/create_project.PNG)
+    ![Create a developers project](Documentation/img/create_project.PNG)
     
     0. Create credentials.
-    ![Create a developers project](img/choose_credentials.PNG)
+    ![Create a developers project](Documentation/img/choose_credentials.PNG)
         * In this first version, i will explain how to deal with Services accounts, so select "Service account key".
     
     0. Create a service account.
-    ![Create a developers project](img/create_service_account.PNG)
+    ![Create a developers project](Documentation/img/create_service_account.PNG)
         * Download the .json file and KEEP IT SAFE.
     
     0. Now you have your service account created inside your new project.
-    ![Create a developers project](img/create_service_account.PNG)
+    ![Create a developers project](Documentation/img/create_service_account.PNG)
     
     0. Copy your "user id" in "Manage service accounts" to use it later.
         * It looks like this one: "first-service-account@example-id-175820.iam.gserviceaccount.com"
         
     0. Change in the file config.ini the path of the credentials .json.
-    ![Create a developers project](img/change_config.PNG)
+    ![Create a developers project](Documentation/img/change_config.PNG)
     
     0. Go to your dashboard screen and go to "ENABLE APIS AND SERVICES" to "unlock" the desired API calls.
     In our example, we will just enable "Google sheets API".
-    ![Create a developers project](img/enable_apis.PNG)
-    ![Create a developers project](img/activate_sheets.PNG)
+    ![Create a developers project](Documentation/img/enable_apis.PNG)
+    ![Create a developers project](Documentation/img/activate_sheets.PNG)
 
 
 ## Where to place credentials file inside the project:
 
-Create a folder named `.Credentials` and store them in `service_credentials`
+Create a folder named `.Credentials` and store newly downloaded credentials renaming them with `service_credentials.json`
 

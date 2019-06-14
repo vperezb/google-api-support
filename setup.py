@@ -18,4 +18,10 @@ setuptools.setup(
         "License :: Public Domain",
         "Development Status :: 3 - Alpha",
     ],
+    install_requires = [
+        "google-api-python-client",
+        "httplib2",
+        "oauth2client",
+        "pandas",
+    ]
 )

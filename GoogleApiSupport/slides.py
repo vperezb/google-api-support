@@ -42,19 +42,19 @@ def create_presentation(name):
     return presentation['presentationId']
 
 
-def presentation_info(presentation_id):  # Class ??
+def get_presentation_info(presentation_id):  # Class ??
     service = gs.get_service("slides")
     presentation = service.presentations().get(
         presentationId=presentation_id).execute()
     return presentation
 
 
-def presentation_slides(presentation_id):
+def get_presentation_slides(presentation_id):
     slides = presentation_info(presentation_id).get('slides')
     return slides
 
 
-def slide_notes(slide_object: dict):
+def get_slide_notes(slide_object: dict):
     output = []
     try:
         for element in slide_object['slideProperties']['notesPage']['pageElements']:
