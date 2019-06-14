@@ -1,6 +1,6 @@
 import json
 
-import google_api_support as gs
+import GoogleApiSupport.auth as gs
 
 class Size:
     def __init__(self, width: float = 3000000.0, height: float = 3000000.0, unit: str = 'EMU'):

@@ -1,9 +1,7 @@
-import json
-
-import google_api_support as gs
+import GoogleApiSupport.auth as gs
 
 
-def __get_file_name(file_id):
+def get_file_name(file_id):
     service = gs.get_service("drive")
     response = service.files().get(fileId=file_id,
                                    fields='name').execute()

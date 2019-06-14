@@ -1,8 +1,10 @@
+import GoogleApiSupport.auth as gs
 import pandas as pd
 
 
-def change_sheet_title(service, newFileName, fileId):
-    
+def change_sheet_title(newFileName, fileId):
+    service = gs.get_service("sheets")
+
     body = {
       "requests": [{
           "updateSpreadsheetProperties": {
@@ -19,7 +21,7 @@ def change_sheet_title(service, newFileName, fileId):
     
     return
 
-def pandas_to_sheet(service, sheetId, pageName, df):
+def pandas_to_sheet(sheetId, pageName, df):
     
     '''
     Uploads a pandas.dataframe to the desired page of a google sheets sheet.
@@ -27,7 +29,9 @@ def pandas_to_sheet(service, sheetId, pageName, df):
     Aditionally, pass a list with the new names of the columns.    
     Data must be utf-8 encoded to avoid errors.
     '''
-    
+
+    service = gs.get_service("sheets")
+
     df.fillna(value = 0, inplace=True)
     columnsList = df.columns.tolist()
     valuesList = df.values.tolist()
@@ -55,11 +59,12 @@ def pandas_to_sheet(service, sheetId, pageName, df):
     except e as Exception:
         print (e)
 
-def get_sheet_names(sheets_service,sheetId):
-    response = sheets_service.spreadsheets().get(spreadsheetId=sheetId).execute()
+def get_sheet_names(sheetId):
+    service = gs.get_service("sheets")
+    response = service.spreadsheets().get(spreadsheetId=sheetId).execute()
     return [ a['properties']['title'] for a in response['sheets']]
 
-def sheet_to_pandas(service, spreadsheetId ,sheetName='',sheetRange='',index=''):
+def sheet_to_pandas(spreadsheetId ,sheetName='',sheetRange='',index=''):
     '''
     PARAMETERS:
         service - Api service
@@ -68,7 +73,7 @@ def sheet_to_pandas(service, spreadsheetId ,sheetName='',sheetRange='',index='')
         sheetRange - Range of the desired info 'A1:C6' (optional) (by default: WHOLE PAGE)
         index - column you want to be the index of the resulting dataframe (optional) (by default: none of the columns is set as index)
     '''
-    
+    service = gs.get_service("sheets")
     if (sheetRange != ''): sheetRange='!'+sheetRange
         
     newresult = service.spreadsheets().values().get(
