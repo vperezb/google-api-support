@@ -1,0 +1,21 @@
+import setuptools
+
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
+setuptools.setup(
+    name="google-api-support",
+    version="0.0.1",
+    author="Víctor Pérez Berruezo",
+    author_email="victor.perez.berruezo@gmail.com",
+    description="In this package you will find functions to deal with google apis. Sheets, Drive and Slides",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    url="https://github.com/vperezb/google-api-support",
+    packages=setuptools.find_packages(),
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License",
+        "Development Status :: 3 - Alpha",
+    ],
+)
