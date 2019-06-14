@@ -4,10 +4,13 @@ Some functions to make Google APIs more usable.
 
 ## What will you achieve with this bunch of functions?
 
-* How to create a pandas.dataframe from a Google Sheets.
-* How to upload a pandas.dataframe to Google Sheets.
-* How to retrieve sheet names from a Google Sheet.
-
+* Sheets
+    * How to create a pandas.dataframe from a Google Sheets.
+    * How to upload a pandas.dataframe to Google Sheets.
+    * How to retrieve sheet names from a Google Sheet.
+* Slides
+    * Create presentation
+    * Get
 
 ## First steps
 
