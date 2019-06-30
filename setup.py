@@ -4,8 +4,8 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(
-    name="google-api-support-vperezb",
-    version="0.0.4",
+    name="google-api-support",
+    version="0.0.1",
     author="Víctor Pérez Berruezo",
     author_email="victor.perez.berruezo@gmail.com",
     description="In this package you will find functions to deal with google apis. Sheets, Drive and Slides",
