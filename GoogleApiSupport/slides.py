@@ -2,6 +2,7 @@ import json
 
 import GoogleApiSupport.auth as gs
 
+
 class Size:
     def __init__(self, width: float = 3000000.0, height: float = 3000000.0, unit: str = 'EMU'):
         self.json = {
@@ -50,7 +51,7 @@ def get_presentation_info(presentation_id):  # Class ??
 
 
 def get_presentation_slides(presentation_id):
-    slides = presentation_info(presentation_id).get('slides')
+    slides = get_presentation_info(presentation_id).get('slides')
     return slides
 
 
@@ -78,7 +79,10 @@ def execute_batch_update(requests, presentation_id):
     return response
 
 
-def text_replace(old: str, new: str, presentation_id: str, pages: list = []):
+def text_replace(old: str, new: str, presentation_id: str, pages=None):
+
+    if pages is None:
+        pages = []
     service = gs.get_service("slides")
 
     service.presentations().batchUpdate(
@@ -100,8 +104,11 @@ def text_replace(old: str, new: str, presentation_id: str, pages: list = []):
     ).execute()
 
 
-def batch_text_replace(text_mapping: dict, presentation_id: str, pages: list = list()):
+def batch_text_replace(text_mapping: dict, presentation_id: str, pages=None):
     """Given a list of tuples with replacement pairs this function replace it all"""
+    if pages is None:
+        pages = list()
+
     requests = []
     for placeholder_text, new_value in text_mapping.items():
         if type(new_value) is str:
@@ -162,15 +169,22 @@ def replace_shape_with_image(url: str, presentation_id: str, contains_text: str 
     return execute_batch_update(requests, presentation_id)
 
 
-def batch_replace_shape_with_image(image_mapping: dict, presentation_id: str):
+def batch_replace_shape_with_image(image_mapping: dict, presentation_id: str, pages=None, fill=False):
+    if pages is None:
+        pages = []
     requests = []
+    if fill:
+        replace_method = 'CENTER_CROP'
+    else:
+        replace_method = "CENTER_INSIDE"
 
     for contains_text, url in image_mapping.items():
         requests.append(
             {
                 "replaceAllShapesWithImage": {
                     "imageUrl": url,
-                    "replaceMethod": "CENTER_INSIDE",
+                    "replaceMethod": replace_method,
+                    "pageObjectIds": pages,
                     "containsText": {
                         "text": "{{" + contains_text + "}}",
                     }
@@ -255,7 +269,7 @@ def batch_delete_text(presentation_id: str, object_id_list: list = None):
 def delete_presentation_notes(presentation_id):
     slides_service = gs.get_service("slides")
 
-    _slides = presentation_slides(presentation_id)
+    _slides = get_presentation_slides(presentation_id)
 
     elements_to_delete = []
 
@@ -276,6 +290,31 @@ def transform_object(presentation_id: str, object_id: str, transform, apply_mode
                 'transform': transform,
                 'applyMode': apply_mode
             }
+        },
+    ]
+
+    body = {
+        'requests': requests
+    }
+
+    service = gs.get_service("slides")
+    response = service.presentations().batchUpdate(presentationId=presentation_id,
+                                                   body=body).execute()
+    return response
+
+
+def reindex_slides(presentation_id: str, slide_ids: list, new_index=-1):
+    if new_index < 0:
+        number = len(get_presentation_slides(presentation_id)) + new_index + 1
+    else:
+        number = new_index
+
+    requests = [
+        {
+            "updateSlidesPosition": {
+                "slideObjectIds": slide_ids,
+                "insertionIndex": number,
+            },
         },
     ]
 
