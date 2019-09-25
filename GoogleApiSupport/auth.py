@@ -5,7 +5,7 @@ from httplib2 import Http
 
 import logging
 
-service_credentials_path = [os.path.join(os.environ['HOME'], '.credentials', 'service_credentials.json'), '.credentials/service_credentials.json']
+service_credentials_path = [os.path.join(os.path.expanduser('~'), '.credentials', 'service_credentials.json'), '.credentials/service_credentials.json']
 
 API_REFERENCES = {
     'slides': {
