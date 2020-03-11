@@ -4,6 +4,7 @@
 
 # Credentials
 .credentials
+token.pickle
 
 # Python
 *.pyc
@@ -15,6 +16,7 @@ __pycache__/
 
 # Virtual Environments
 Env/
+venv/
 
 # Notebooks
 **/.ipynb_checkpoints/
@@ -28,3 +30,4 @@ Env/
 # Pypi files
 build/
 dist/
+google_api_support.egg-info/
