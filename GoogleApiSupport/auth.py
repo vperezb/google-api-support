@@ -5,7 +5,10 @@ from httplib2 import Http
 
 import logging
 
-service_credentials_path = [os.path.join(os.path.expanduser('~'), '.credentials', 'service_credentials.json'), '.credentials/service_credentials.json']
+possible_service_credentials_path = [
+    os.path.join(os.path.expanduser('~'), '.credentials', 'service_credentials.json'), 
+    '.credentials/service_credentials.json',
+    os.environ['SERVICE_CREDENTIALS_PATH']]
 
 API_REFERENCES = {
     'slides': {
@@ -24,7 +27,7 @@ API_REFERENCES = {
 
 def get_service(service_type):
     service = None
-    for file in service_credentials_path:
+    for file in possible_service_credentials_path:
         try:
             credentials = ServiceAccountCredentials.from_json_keyfile_name(
                 file,
@@ -39,7 +42,7 @@ def get_service(service_type):
             )
             logging.info('Using credentials found in ' + file)
         except Exception as e:
-            continue
+            print (e)
     if not service:
         logging.error(' UNABLE TO RETRIEVE CREDENTIALS | Expected credential paths: ' + ', '.join(service_credentials_path) + ' | More info in project Documentation folder setup_credentials.md file')
     return service

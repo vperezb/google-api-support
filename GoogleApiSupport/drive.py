@@ -9,7 +9,8 @@ def get_file_name(file_id):
 
 
 def move_file(file_id, folder_destination_id):
-    print('Moving file id {} to folder with id{}'.format(file_id, folder_destination_id))
+    print('Moving file id {} to folder with id{}'.format(
+        file_id, folder_destination_id))
     service = gs.get_service("drive")
     file = service.files().get(fileId=file_id,
                                fields='parents',
@@ -111,7 +112,8 @@ def get_folder_id_by_name(name, team_drive_id):
 
 
 def get_folder_id_by_path(path, team_drive_id):
-    print('Retrieving folder id for path {} inside TeamDrive with id {}'.format(path, team_drive_id))
+    print('Retrieving folder id for path {} inside TeamDrive with id {}'.format(
+        path, team_drive_id))
     parent_folder = ''
     last_level = ''
     for level in path.split('/'):
@@ -131,7 +133,7 @@ def get_folder_id_by_path(path, team_drive_id):
     return parent_folder
 
 
-def download_file(file_id, destination_path = 'test.pdf', mime_type='application/pdf'):
+def download_file(file_id, destination_path='test.pdf', mime_type='application/pdf'):
     service = gs.get_service("drive")
     data = service.files().export(
         fileId=file_id,

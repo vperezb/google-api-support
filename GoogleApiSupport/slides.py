@@ -39,7 +39,8 @@ class Transform:
 
 def create_presentation(name):
     service = gs.get_service("slides")
-    presentation = service.presentations().create(body={"title": name}).execute()
+    presentation = service.presentations().create(
+        body={"title": name}).execute()
     return presentation['presentationId']
 
 
@@ -124,7 +125,8 @@ def batch_text_replace(text_mapping: dict, presentation_id: str, pages=None):
                 }
             ]
         else:
-            raise Exception('The text from key {} is not a string'.format(placeholder_text))
+            raise Exception(
+                'The text from key {} is not a string'.format(placeholder_text))
     return execute_batch_update(requests, presentation_id)
 
 

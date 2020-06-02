@@ -6,23 +6,23 @@ def change_sheet_title(newFileName, fileId):
     service = gs.get_service("sheets")
 
     body = {
-      "requests": [{
-          "updateSpreadsheetProperties": {
-              "properties": {"title": newFileName},
-              "fields": "title"
+        "requests": [{
+            "updateSpreadsheetProperties": {
+                "properties": {"title": newFileName},
+                "fields": "title"
             }
         }]
     }
 
     service.spreadsheets().batchUpdate(
-        spreadsheetId=fileId, 
+        spreadsheetId=fileId,
         body=body
     ).execute()
-    
+
     return
 
+
 def pandas_to_sheet(sheetId, pageName, df):
-    
     '''
     Uploads a pandas.dataframe to the desired page of a google sheets sheet.
     SERVICE ACCOUNT MUST HAVE PERMISIONS TO WRITE IN THE SHEET.
@@ -32,7 +32,7 @@ def pandas_to_sheet(sheetId, pageName, df):
 
     service = gs.get_service("sheets")
 
-    df.fillna(value = 0, inplace=True)
+    df.fillna(value=0, inplace=True)
     columnsList = df.columns.tolist()
     valuesList = df.values.tolist()
 
@@ -43,28 +43,30 @@ def pandas_to_sheet(sheetId, pageName, df):
                 'values': [columnsList] + valuesList
             },
         ]
-        
+
         body = {
-          'valueInputOption': 'USER_ENTERED',
-          'data': data
+            'valueInputOption': 'USER_ENTERED',
+            'data': data
         }
-        
+
         result = service.spreadsheets().values().batchUpdate(
             spreadsheetId=sheetId,
             body=body
         ).execute()
-    
-        return 'True' 
-    
+
+        return 'True'
+
     except e as Exception:
-        print (e)
+        print(e)
+
 
 def get_sheet_names(sheetId):
     service = gs.get_service("sheets")
     response = service.spreadsheets().get(spreadsheetId=sheetId).execute()
-    return [ a['properties']['title'] for a in response['sheets']]
+    return [a['properties']['title'] for a in response['sheets']]
 
-def sheet_to_pandas(spreadsheetId ,sheetName='',sheetRange='',index=''):
+
+def sheet_to_pandas(spreadsheetId, sheetName='', sheetRange='', index=''):
     '''
     PARAMETERS:
         service - Api service
@@ -74,17 +76,18 @@ def sheet_to_pandas(spreadsheetId ,sheetName='',sheetRange='',index=''):
         index - column you want to be the index of the resulting dataframe (optional) (by default: none of the columns is set as index)
     '''
     service = gs.get_service("sheets")
-    if (sheetRange != ''): sheetRange='!'+sheetRange
-        
+    if (sheetRange != ''):
+        sheetRange = '!'+sheetRange
+
     newresult = service.spreadsheets().values().get(
         spreadsheetId=spreadsheetId,
-        valueRenderOption='FORMATTED_VALUE', 
-        range = sheetName+sheetRange
+        valueRenderOption='FORMATTED_VALUE',
+        range=sheetName+sheetRange
     ).execute()
-        
+
     headers = newresult['values'].pop(0)
-    
-    if (index == ''): 
-        return pd.DataFrame(newresult['values'],columns = headers)
+
+    if (index == ''):
+        return pd.DataFrame(newresult['values'], columns=headers)
     else:
-        return pd.DataFrame(newresult['values'],columns = headers).set_index(index, drop=False)
+        return pd.DataFrame(newresult['values'], columns=headers).set_index(index, drop=False)
