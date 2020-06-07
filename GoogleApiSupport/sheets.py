@@ -1,9 +1,10 @@
-import GoogleApiSupport.auth as gs
 import pandas as pd
+
+from GoogleApiSupport import auth
 
 
 def change_sheet_title(newFileName, fileId):
-    service = gs.get_service("sheets")
+    service = auth.get_service("sheets")
 
     body = {
         "requests": [{
@@ -30,7 +31,7 @@ def pandas_to_sheet(sheetId, pageName, df):
     Data must be utf-8 encoded to avoid errors.
     '''
 
-    service = gs.get_service("sheets")
+    service = auth.get_service("sheets")
 
     df.fillna(value=0, inplace=True)
     columnsList = df.columns.tolist()
@@ -61,7 +62,7 @@ def pandas_to_sheet(sheetId, pageName, df):
 
 
 def get_sheet_names(sheetId):
-    service = gs.get_service("sheets")
+    service = auth.get_service("sheets")
     response = service.spreadsheets().get(spreadsheetId=sheetId).execute()
     return [a['properties']['title'] for a in response['sheets']]
 
@@ -75,7 +76,7 @@ def sheet_to_pandas(spreadsheetId, sheetName='', sheetRange='', index=''):
         sheetRange - Range of the desired info 'A1:C6' (optional) (by default: WHOLE PAGE)
         index - column you want to be the index of the resulting dataframe (optional) (by default: none of the columns is set as index)
     '''
-    service = gs.get_service("sheets")
+    service = auth.get_service("sheets")
     if (sheetRange != ''):
         sheetRange = '!'+sheetRange
 

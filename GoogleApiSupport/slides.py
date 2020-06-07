@@ -1,6 +1,5 @@
 import json
-
-import GoogleApiSupport.auth as gs
+from GoogleApiSupport import auth
 
 
 class Size:
@@ -38,14 +37,14 @@ class Transform:
 
 
 def create_presentation(name):
-    service = gs.get_service("slides")
+    service = auth.get_service("slides")
     presentation = service.presentations().create(
         body={"title": name}).execute()
     return presentation['presentationId']
 
 
 def get_presentation_info(presentation_id):  # Class ??
-    service = gs.get_service("slides")
+    service = auth.get_service("slides")
     presentation = service.presentations().get(
         presentationId=presentation_id).execute()
     return presentation
@@ -74,7 +73,7 @@ def execute_batch_update(requests, presentation_id):
         'requests': requests
     }
 
-    slides_service = gs.get_service("slides")
+    slides_service = auth.get_service("slides")
     response = slides_service.presentations().batchUpdate(presentationId=presentation_id,
                                                           body=body).execute()
     return response
@@ -84,7 +83,7 @@ def text_replace(old: str, new: str, presentation_id: str, pages=None):
 
     if pages is None:
         pages = []
-    service = gs.get_service("slides")
+    service = auth.get_service("slides")
 
     service.presentations().batchUpdate(
         body={
@@ -211,7 +210,7 @@ def duplicate_object(presentation_id: str, object_id: str):
         'requests': requests
     }
 
-    service = gs.get_service("slides")
+    service = auth.get_service("slides")
     response = service.presentations().batchUpdate(presentationId=presentation_id,
                                                    body=body).execute()
     return response
@@ -230,7 +229,7 @@ def delete_object(presentation_id: str, object_id: str = None):
         'requests': requests
     }
 
-    service = gs.get_service("slides")
+    service = auth.get_service("slides")
     response = service.presentations().batchUpdate(presentationId=presentation_id,
                                                    body=body).execute()
     return response
@@ -269,7 +268,7 @@ def batch_delete_text(presentation_id: str, object_id_list: list = None):
 
 
 def delete_presentation_notes(presentation_id):
-    slides_service = gs.get_service("slides")
+    slides_service = auth.get_service("slides")
 
     _slides = get_presentation_slides(presentation_id)
 
@@ -299,7 +298,7 @@ def transform_object(presentation_id: str, object_id: str, transform, apply_mode
         'requests': requests
     }
 
-    service = gs.get_service("slides")
+    service = auth.get_service("slides")
     response = service.presentations().batchUpdate(presentationId=presentation_id,
                                                    body=body).execute()
     return response
@@ -324,7 +323,7 @@ def reindex_slides(presentation_id: str, slide_ids: list, new_index=-1):
         'requests': requests
     }
 
-    service = gs.get_service("slides")
+    service = auth.get_service("slides")
     response = service.presentations().batchUpdate(presentationId=presentation_id,
                                                    body=body).execute()
     return response

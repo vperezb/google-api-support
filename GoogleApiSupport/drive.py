@@ -1,8 +1,8 @@
-import GoogleApiSupport.auth as gs
+from GoogleApiSupport import auth
 
 
 def get_file_name(file_id):
-    service = gs.get_service("drive")
+    service = auth.get_service("drive")
     response = service.files().get(fileId=file_id,
                                    fields='name').execute()
     return response
@@ -11,7 +11,7 @@ def get_file_name(file_id):
 def move_file(file_id, folder_destination_id):
     print('Moving file id {} to folder with id{}'.format(
         file_id, folder_destination_id))
-    service = gs.get_service("drive")
+    service = auth.get_service("drive")
     file = service.files().get(fileId=file_id,
                                fields='parents',
                                supportsTeamDrives=True).execute()
@@ -27,7 +27,7 @@ def move_file(file_id, folder_destination_id):
 
 
 def delete_file(file_id):
-    service = gs.get_service("drive")
+    service = auth.get_service("drive")
     response = service.files().delete(fileId=file_id).execute()
     return response
 
@@ -39,7 +39,7 @@ def copy_file(file_from_id, new_file_name=''):
     print('Copying file {} with name {}'.format(file_from_id, new_file_name))
     body = {'name': new_file_name}
 
-    service = gs.get_service("drive")
+    service = auth.get_service("drive")
     drive_response = service.files().copy(fileId=file_from_id,
                                           body=body,
                                           supportsTeamDrives=True,
@@ -50,7 +50,7 @@ def copy_file(file_from_id, new_file_name=''):
 
 
 def upload_image_to_drive(image_name: str, image_file_path: str, folder_destination_id='None'):
-    service = gs.get_service("drive")
+    service = auth.get_service("drive")
 
     file = service.files().create(
         body={'name': image_name, 'mimeType': 'image/png'}, media_body=image_file_path).execute()
@@ -69,7 +69,7 @@ def upload_image_to_drive(image_name: str, image_file_path: str, folder_destinat
 
 
 def create_folder(name, parent_folder: list = list()):
-    service = gs.get_service("drive")
+    service = auth.get_service("drive")
 
     file_metadata = {
         'name': name,
@@ -85,7 +85,7 @@ def create_folder(name, parent_folder: list = list()):
 
 
 def list_folders_in_folder(parent_folder, team_drive_id):
-    service = gs.get_service("drive")
+    service = auth.get_service("drive")
 
     response = service.files().list(teamDriveId=team_drive_id, includeTeamDriveItems=True,
                                     corpora='teamDrive', supportsTeamDrives=True,
@@ -95,7 +95,7 @@ def list_folders_in_folder(parent_folder, team_drive_id):
 
 
 def get_folder_id_by_name(name, team_drive_id):
-    service = gs.get_service("drive")
+    service = auth.get_service("drive")
 
     response = service.files().list(teamDriveId=team_drive_id, includeTeamDriveItems=True,
                                     corpora='teamDrive', supportsTeamDrives=True,
@@ -134,7 +134,7 @@ def get_folder_id_by_path(path, team_drive_id):
 
 
 def download_file(file_id, destination_path='test.pdf', mime_type='application/pdf'):
-    service = gs.get_service("drive")
+    service = auth.get_service("drive")
     data = service.files().export(
         fileId=file_id,
         mimeType=mime_type

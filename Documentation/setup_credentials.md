@@ -10,3 +10,6 @@
     0. In your home path, inside `.credentials` folder. Full path `~/.credentials/service_credentials.json`.
     0. -In your relative path `.credentials/service_credentials.json`.- Legacy, not recommended. 
 
+### Creating a service account in Google
+
+https://cloud.google.com/docs/authentication/production#creating_a_service_account

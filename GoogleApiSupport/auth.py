@@ -1,48 +1,54 @@
 import os
+import logging
+
 from oauth2client.service_account import ServiceAccountCredentials
 from apiclient.discovery import build
 from httplib2 import Http
 
-import logging
+from GoogleApiSupport import apis
 
-possible_service_credentials_path = [
-    os.path.join(os.path.expanduser('~'), '.credentials', 'service_credentials.json'), 
-    '.credentials/service_credentials.json',
-    os.environ['SERVICE_CREDENTIALS_PATH']]
 
-API_REFERENCES = {
-    'slides': {
-        'scope':'https://www.googleapis.com/auth/presentations',
-        'build':'slides',
-        'version': 'v1'},
-    'drive': {
-        'scope':'https://www.googleapis.com/auth/drive',
-        'build':'drive',
-        'version': 'v3'},
-    'sheets':{
-        'scope':'https://www.googleapis.com/auth/spreadsheets',
-        'build':'sheets',
-        'version': 'v4'}
-}
+def get_service(api_name, service_credentials_path=None):
+    if service_credentials_path == None:
+        service_credentials_path = get_service_credentials_path()
 
-def get_service(service_type):
     service = None
-    for file in possible_service_credentials_path:
-        try:
-            credentials = ServiceAccountCredentials.from_json_keyfile_name(
-                file,
-                scopes= API_REFERENCES[service_type]['scope']
-            )
-        
-            service = build(
-                API_REFERENCES[service_type]['build'],
-                API_REFERENCES[service_type]['version'],
-                http=credentials.authorize(Http()),
-                cache_discovery=False
-            )
-            logging.info('Using credentials found in ' + file)
-        except Exception as e:
-            print (e)
+
+    credentials = ServiceAccountCredentials.from_json_keyfile_name(
+        service_credentials_path,
+        scopes=apis.api_configs(api_name)['scope']
+    )
+
+    service = build(apis.api_configs(api_name)['build'],
+        apis.api_configs(api_name)['version'],
+        http=credentials.authorize(Http()),
+        cache_discovery=False
+    )
+
+    logging.info('Using credentials found in ' + file)
+
     if not service:
-        logging.error(' UNABLE TO RETRIEVE CREDENTIALS | Expected credential paths: ' + ', '.join(service_credentials_path) + ' | More info in project Documentation folder setup_credentials.md file')
+        logging.error(' UNABLE TO RETRIEVE CREDENTIALS | Expected credential paths: ' + ', '.join(
+            service_credentials_path) + ' | More info in project Documentation folder setup_credentials.md file')
     return service
+
+
+def get_service_credentials_path():
+    if os.environ.get('SERVICE_CREDENTIALS_PATH')
+    service_credentials_path = os.environ['SERVICE_CREDENTIALS_PATH']
+    logging.info('Using credentials from ' + service_credentials_path)
+    if os.path.isfile(service_credentials_path):
+            logging.info('Found file credentials in' +
+                         service_credentials_path)
+        else:
+            raise.Exception('File in SERVICE_CREDENTIALS_PATH not found')
+    elif os.path.isfile(os.path.join(os.path.expanduser('~'), '.credentials', 'service_credentials.json')):
+        service_credentials_path = os.path.join(os.path.expanduser('~'), '.credentials', 'service_credentials.json')
+        logging.info('Using credentials from ' + service_credentials_path)
+    elif os.path.isfile(os.path.join('.credentials','service_credentials.json')):
+        service_credentials_path = os.path.join('.credentials','service_credentials.json')
+    else:
+        raise.Exception(
+            'UNABLE TO FIND CREDENTIALS FILE | More info in project Documentation folder setup_credentials.md file'
+        )
+    return service_credentials_path
