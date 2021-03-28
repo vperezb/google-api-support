@@ -34,9 +34,9 @@ def get_service(api_name, service_credentials_path=None):
 
 
 def get_service_credentials_path():
-    if os.environ.get('SERVICE_CREDENTIALS_PATH')
-    service_credentials_path = os.environ['SERVICE_CREDENTIALS_PATH']
-    logging.info('Using credentials from ' + service_credentials_path)
+    if os.environ.get('SERVICE_CREDENTIALS_PATH'):
+        service_credentials_path = os.environ['SERVICE_CREDENTIALS_PATH']
+        logging.info('Using credentials from ' + service_credentials_path)
     if os.path.isfile(service_credentials_path):
             logging.info('Found file credentials in' +
                          service_credentials_path)
