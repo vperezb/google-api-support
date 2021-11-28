@@ -57,7 +57,7 @@ def pandas_to_sheet(sheetId, pageName, df):
 
         return 'True'
 
-    except e as Exception:
+    except Exception as e:
         print(e)
 
 
