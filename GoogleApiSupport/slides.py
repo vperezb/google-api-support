@@ -327,3 +327,54 @@ def reindex_slides(presentation_id: str, slide_ids: list, new_index=-1):
     response = service.presentations().batchUpdate(presentationId=presentation_id,
                                                    body=body).execute()
     return response
+
+
+def get_all_shapes_placeholders(presentation_id):
+    shape_ids = {}
+    presentation = get_presentation_info(presentation_id)
+    for slide in presentation['slides']:
+        for page_element in slide['pageElements']:
+            shape_ids[page_element['objectId']] = None
+            if 'shape' in page_element:
+                if 'text' in page_element['shape']:
+                    has_inner_text = [text for text in page_element['shape']['text']['textElements'] if text.get('textRun')]
+                    if has_inner_text:
+                        shape_ids[page_element['objectId']] = { 'inner_text':has_inner_text[0]['textRun']['content'].strip(), 'page_id':slide['objectId']}
+    return shape_ids
+
+
+def update_shape_type(presentation_id, page_id, page_element, shape_type, size=None, transform=None):   
+    
+    requests = [
+        {
+            'deleteObject': {
+                'objectId': page_element['objectId']
+            }
+        },
+        {
+            'createShape': {
+            'objectId': page_element['objectId'],
+            'shapeType': shape_type,
+            'elementProperties': {
+                'pageObjectId': page_id,
+                'size': size or page_element['size'],
+                'transform': transform or page_element['transform']
+            }
+        }
+        }
+    ]
+
+    return execute_batch_update(requests, presentation_id)
+
+def get_page_element(presentation_id, element_id):
+    presentation = get_presentation_info(presentation_id)
+    for slide in presentation['slides']:
+        for page_element in slide['pageElements']:
+            if page_element['objectId'] == element_id:
+                return page_element
+            
+def get_page(presentation_id, page_id):
+    presentation = get_presentation_info(presentation_id)
+    for slide in presentation['slides']:
+        if slide['objectID'] == page_id:
+            return page
