@@ -31,7 +31,7 @@ def get_service(api_name, service_credentials_path=None):
     return service
 
 
-def get_service_credentials_path(service_credentials_path):
+def get_service_credentials_path(service_credentials_path=None):
     if service_credentials_path:
         service_credentials_path = service_credentials_path
         logging.info('Trying to use credentials from ' + 'Method 0: Path from function argument | ' + service_credentials_path)
