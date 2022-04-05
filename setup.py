@@ -8,7 +8,7 @@ setup(
     version="0.0.5b2",
     author="Víctor Pérez Berruezo",
     author_email="victor.perez.berruezo@gmail.com",
-    description="In this package you will find functions to deal with google apis. Sheets, Drive and Slides",
+    description="In this package you will find functions to deal with google apis. Sheets, Drive, Storage and Slides",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/vperezb/google-api-support",
@@ -23,5 +23,6 @@ setup(
         "httplib2",
         "oauth2client",
         "pandas",
+        "google-cloud-storage",
     ],
 )
