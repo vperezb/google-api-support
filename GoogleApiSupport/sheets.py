@@ -92,3 +92,14 @@ def sheet_to_pandas(spreadsheetId, sheetName='', sheetRange='', index=''):
         return pd.DataFrame(newresult['values'], columns=headers)
     else:
         return pd.DataFrame(newresult['values'], columns=headers).set_index(index, drop=False)
+
+
+def clear_sheet(spreadsheetId, sheetName, sheetRange=''):
+    service = auth.get_service("sheets")
+    if (sheetRange != ''):
+        sheetRange = '!'+sheetRange
+
+    newresult = service.spreadsheets().values().clear(
+        spreadsheetId=spreadsheetId,
+        range=sheetName+sheetRange
+    ).execute()
