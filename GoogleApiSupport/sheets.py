@@ -23,7 +23,7 @@ def change_sheet_title(newFileName, fileId):
     return
 
 
-def pandas_to_sheet(sheetId, pageName, df):
+def pandas_to_sheet(sheetId, pageName, df, startingCell='A1'):
     '''
     Uploads a pandas.dataframe to the desired page of a google sheets sheet.
     SERVICE ACCOUNT MUST HAVE PERMISIONS TO WRITE IN THE SHEET.
@@ -40,7 +40,7 @@ def pandas_to_sheet(sheetId, pageName, df):
     try:
         data = [
             {
-                'range': pageName+'!A1',
+                'range': pageName+'!'+startingCell,
                 'values': [columnsList] + valuesList
             },
         ]
