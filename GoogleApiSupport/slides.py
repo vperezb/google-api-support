@@ -68,13 +68,14 @@ def get_slide_notes(slide_object: dict):
         return '# Error in slide' + str(e)
 
 
-def execute_batch_update(requests, presentation_id):
+def execute_batch_update(requests, presentation_id, additional_apis=[]):
     body = {
         'requests': requests
     }
-
-    slides_service = auth.get_service("slides")
-    response = slides_service.presentations().batchUpdate(presentationId=presentation_id,
+    
+    service = auth.get_service("slides", additional_apis=additional_apis)
+    
+    response = service.presentations().batchUpdate(presentationId=presentation_id,
                                                           body=body).execute()
     return response
 
@@ -378,3 +379,27 @@ def get_page(presentation_id, page_id):
     for slide in presentation['slides']:
         if slide['objectID'] == page_id:
             return page
+
+
+def replace_shape_with_chart(presentation_id: str, placeholder_text, spreadsheet_id, chart_id, linking_mode='NOT_LINKED_IMAGE', target_id_pages=[]):
+    requests = []
+      
+    requests.append(
+        {
+            "replaceAllShapesWithSheetsChart": {
+                "containsText": 
+                    {
+                        "text": placeholder_text,
+                        "matchCase": True
+                    },
+                "spreadsheetId": spreadsheet_id,
+                "chartId": chart_id,
+                "linkingMode": linking_mode, # Unlinked by default, see other options https://developers.google.com/slides/api/reference/rest/v1/presentations/request#LinkingMode_1
+                "pageObjectIds": target_id_pages
+            }
+        }
+    )
+
+    response = execute_batch_update(requests, presentation_id, additional_apis = ['sheets'])
+    
+    return response

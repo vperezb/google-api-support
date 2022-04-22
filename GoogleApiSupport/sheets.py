@@ -60,11 +60,22 @@ def pandas_to_sheet(sheetId, pageName, df, startingCell='A1'):
     except Exception as e:
         print(e)
 
-
-def get_sheet_names(sheetId):
+def get_sheet_info(sheetId):
     service = auth.get_service("sheets")
     response = service.spreadsheets().get(spreadsheetId=sheetId).execute()
+    return response
+
+
+def get_sheet_names(sheetId):
+    response = get_sheet_info(sheetId)
     return [a['properties']['title'] for a in response['sheets']]
+
+
+def get_sheet_charts(spreadsheetId, sheetName):
+    sheet = get_sheet_info(spreadsheetId)
+    for sheet_page in sheet['sheets']:
+        if sheet_page['properties']['title']==sheetName:
+            return sheet_page['charts']
 
 
 def sheet_to_pandas(spreadsheetId, sheetName='', sheetRange='', index=''):
