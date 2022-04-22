@@ -9,14 +9,19 @@ from httplib2 import Http
 from GoogleApiSupport import apis
 
 
-def get_service(api_name, service_credentials_path=None):
+def get_service(api_name, service_credentials_path=None, additional_apis=[]):
     service_credentials_path = get_service_credentials_path(service_credentials_path)
 
     service = None
+    scopes = apis.get_api_config(api_name)['scope']
+    if additional_apis:
+        scopes = [scopes]
+        for additional_api_name in additional_apis:
+            scopes.append(apis.get_api_config(additional_api_name)['scope'])
 
     credentials = ServiceAccountCredentials.from_json_keyfile_name(
         service_credentials_path,
-        scopes=apis.get_api_config(api_name)['scope']
+        scopes=scopes
     )
 
     service = build(apis.get_api_config(api_name)['build'],
