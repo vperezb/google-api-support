@@ -84,6 +84,67 @@ def create_folder(name, parent_folder: list = list()):
     return response
 
 
+def folders_in_folder(parent_folder):
+    service = auth.get_service("drive")
+
+    response = service.files().list(q="mimeType='application/vnd.google-apps.folder' \
+                                    and parents='{parent_folder}'".format(parent_folder=parent_folder)).execute()
+    return response['files']
+
+
+def search_folder_id_by_name(name, parent_folder):
+    service = auth.get_service("drive")
+
+    response = service.files().list(q="mimeType='application/vnd.google-apps.folder' \
+                                    and name='{name}'".format(name=name)).execute()
+    files = response['files'] 
+    
+    if len(files) > 1:
+        print('Warning: There\'s more than 1 folder with name {}'.format(name))
+
+    elif len(files) == 0:
+        raise ('TODO: Create folder {}'.format(name))
+
+    return files[0]['id']
+
+
+def download_file(file_id, destination_path='test.pdf', mime_type='application/pdf'):
+    service = auth.get_service("drive")
+    data = service.files().export(
+        fileId=file_id,
+        mimeType=mime_type
+    ).execute()
+
+    f = open(destination_path, 'wb')
+    f.write(data)
+    f.close()
+    return
+    
+
+# Specific Team Drive functions
+
+def get_folder_id_by_path(path, team_drive_id):
+    print('Retrieving folder id for path {} inside TeamDrive with id {}'.format(
+        path, team_drive_id))
+    parent_folder = ''
+    last_level = ''
+    for level in path.split('/'):
+        if parent_folder == '':
+            parent_folder = get_folder_id_by_name(level, team_drive_id)
+        else:
+            folders_in_folder = list_folders_in_folder(
+                parent_folder, team_drive_id)
+            if level in [response['name'] for response in folders_in_folder]:
+                parent_folder = [
+                    response['id'] for response in folders_in_folder if response['name'] == level][0]
+            else:
+                print('Creating folder {} inside parent folder {} with folder id = {}'.format(
+                    level, last_level, parent_folder))
+                parent_folder = create_folder(level, [parent_folder])['id']
+        last_level = level
+    return parent_folder
+
+
 def list_folders_in_folder(parent_folder, team_drive_id):
     service = auth.get_service("drive")
 
@@ -109,38 +170,3 @@ def get_folder_id_by_name(name, team_drive_id):
         raise ('TODO: Create folder {}'.format(name))
 
     return response['files'][0]['id']
-
-
-def get_folder_id_by_path(path, team_drive_id):
-    print('Retrieving folder id for path {} inside TeamDrive with id {}'.format(
-        path, team_drive_id))
-    parent_folder = ''
-    last_level = ''
-    for level in path.split('/'):
-        if parent_folder == '':
-            parent_folder = get_folder_id_by_name(level, team_drive_id)
-        else:
-            folders_in_folder = list_folders_in_folder(
-                parent_folder, team_drive_id)
-            if level in [response['name'] for response in folders_in_folder]:
-                parent_folder = [
-                    response['id'] for response in folders_in_folder if response['name'] == level][0]
-            else:
-                print('Creating folder {} inside parent folder {} with folder id = {}'.format(
-                    level, last_level, parent_folder))
-                parent_folder = create_folder(level, [parent_folder])['id']
-        last_level = level
-    return parent_folder
-
-
-def download_file(file_id, destination_path='test.pdf', mime_type='application/pdf'):
-    service = auth.get_service("drive")
-    data = service.files().export(
-        fileId=file_id,
-        mimeType=mime_type
-    ).execute()
-
-    f = open(destination_path, 'wb')
-    f.write(data)
-    f.close()
-    return
