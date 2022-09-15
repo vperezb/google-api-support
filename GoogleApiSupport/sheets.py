@@ -3,6 +3,20 @@ import pandas as pd
 from GoogleApiSupport import auth
 
 
+def create(title):
+    service = auth.get_service("sheets")
+    spreadsheet = {
+        'properties': {
+            'title': title
+        }
+    }
+    spreadsheet = service.spreadsheets().create(body=spreadsheet,
+                                                fields='spreadsheetId') \
+        .execute()
+    print(f"Spreadsheet ID: {(spreadsheet.get('spreadsheetId'))}")
+    return spreadsheet.get('spreadsheetId')
+
+
 def change_sheet_title(newFileName, fileId):
     service = auth.get_service("sheets")
 

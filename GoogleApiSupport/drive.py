@@ -9,7 +9,7 @@ def get_file_name(file_id):
 
 
 def move_file(file_id, folder_destination_id):
-    print('Moving file id {} to folder with id{}'.format(
+    print('Moving file id {} to folder with id {}'.format(
         file_id, folder_destination_id))
     service = auth.get_service("drive")
     file = service.files().get(fileId=file_id,
