@@ -78,7 +78,7 @@ def get_sheet_charts(spreadsheetId, sheetName):
             return sheet_page['charts']
 
 
-def sheet_to_pandas(spreadsheetId, sheetName='', sheetRange='', index=''):
+def sheet_to_pandas(spreadsheetId, sheetName='', sheetRange='', index='', has_header=True ):
     '''
     PARAMETERS:
         service - Api service
@@ -97,7 +97,14 @@ def sheet_to_pandas(spreadsheetId, sheetName='', sheetRange='', index=''):
         range=sheetName+sheetRange
     ).execute()
 
-    headers = newresult['values'].pop(0)
+    if has_header:
+        headers = newresult['values'].pop(0)
+    else:
+        max_len = 0 
+        for row in newresult['values']:
+            if len(row) > max_len:
+                max_len = len(row)
+        headers = get_range_column_names(max_len)
 
     if (index == ''):
         return pd.DataFrame(newresult['values'], columns=headers)
