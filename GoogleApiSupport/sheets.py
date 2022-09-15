@@ -121,3 +121,28 @@ def clear_sheet(spreadsheetId, sheetName, sheetRange=''):
         spreadsheetId=spreadsheetId,
         range=sheetName+sheetRange
     ).execute()
+
+# Complementary functions
+
+def get_column_name(n):
+
+	# initialize output string as empty
+	result = ''
+
+	while n > 0:
+
+		# find the index of the next letter and concatenate the letter
+		# to the solution
+
+		# here index 0 corresponds to `A`, and 25 corresponds to `Z`
+		index = (n - 1) % 26
+		result += chr(index + ord('A'))
+		n = (n - 1) // 26
+
+	return result[::-1]
+
+def get_range_column_names(r):
+    output = []
+    for i in range(r):
+        output.append(get_column_name(i))
+    return output
