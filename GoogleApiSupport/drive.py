@@ -92,6 +92,13 @@ def folders_in_folder(parent_folder):
     return response['files']
 
 
+def files_in_folder(parent_folder):
+    service = auth.get_service("drive")
+
+    response = service.files().list(q="parents='{parent_folder}'".format(parent_folder=parent_folder)).execute()
+    return response['files']
+
+
 def search_folder_id_by_name(name, parent_folder):
     service = auth.get_service("drive")
 
