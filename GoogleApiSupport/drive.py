@@ -103,7 +103,9 @@ def search_folder_id_by_name(name, parent_folder):
     service = auth.get_service("drive")
 
     response = service.files().list(q="mimeType='application/vnd.google-apps.folder' \
-                                    and name='{name}'".format(name=name)).execute()
+                                    and name='{name}' and parents='{parent_folder}'".format(
+                                        name=name, parent_folder=parent_folder)).execute()
+    
     files = response['files'] 
     
     if len(files) > 1:
