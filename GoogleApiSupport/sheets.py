@@ -17,6 +17,24 @@ def create(title):
     return spreadsheet.get('spreadsheetId')
 
 
+def add_sheet_to_spreadsheet(sheetId, newSheetName):
+    '''Adds a new page.'''
+
+    service = auth.get_service("sheets")
+    
+    data = {'requests': [
+        {
+            'addSheet':{
+                'properties':{'title': newSheetName}
+            }
+        }
+    ]}
+
+    response = service.spreadsheets().batchUpdate(spreadsheetId=sheetId, body=data).execute()
+    #SHEET_ID = res['replies'][0]['addSheet']['properties']['sheetId']
+    return response
+
+
 def change_sheet_title(newFileName, fileId):
     service = auth.get_service("sheets")
 
