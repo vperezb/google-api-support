@@ -8,6 +8,8 @@ Some functions to make Google APIs more usable.
     * Get pandas.dataframe from Sheets
     * Upload pandas.dataframe to Sheets
     * Retrieve sheet names
+    * Add sheets to a spreadsheet
+    * Create new spreadsheet
 * Slides
     * Create presentation
     * Get presentation info
