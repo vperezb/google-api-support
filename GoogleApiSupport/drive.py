@@ -14,14 +14,14 @@ def move_file(file_id, folder_destination_id):
     service = auth.get_service("drive")
     file = service.files().get(fileId=file_id,
                                fields='parents',
-                               supportsTeamDrives=True).execute()
+                               supportsAllDrives=True).execute()
 
     previous_parents = ",".join(file.get('parents'))
 
     response = service.files().update(fileId=file_id,
                                       addParents=folder_destination_id,
                                       removeParents=previous_parents,
-                                      supportsTeamDrives=True,
+                                      supportsAllDrives=True,
                                       fields='id, parents').execute()
     return response
 
@@ -32,7 +32,7 @@ def delete_file(file_id):
     return response
 
 
-def copy_file(file_from_id, new_file_name=''):
+def copy_file(file_from_id, new_file_name='', suppots_all_drives = False):
     """
     By passing an old file id, creates a copy and returns the id of the file copy
     """
@@ -42,7 +42,7 @@ def copy_file(file_from_id, new_file_name=''):
     service = auth.get_service("drive")
     drive_response = service.files().copy(fileId=file_from_id,
                                           body=body,
-                                          supportsTeamDrives=True,
+                                          supportsAllDrives=suppots_all_drives,
                                           ).execute()
 
     new_file_id = drive_response.get('id')
@@ -80,7 +80,7 @@ def create_folder(name, parent_folder: list = list()):
     response = service.files().create(
         body=file_metadata,
         fields='id',
-        supportsTeamDrives=True).execute()
+        supportsAllDrives=True).execute()
     return response
 
 
@@ -158,7 +158,7 @@ def list_folders_in_folder(parent_folder, team_drive_id):
     service = auth.get_service("drive")
 
     response = service.files().list(teamDriveId=team_drive_id, includeTeamDriveItems=True,
-                                    corpora='teamDrive', supportsTeamDrives=True,
+                                    corpora='teamDrive', supportsAllDrives=True,
                                     q="mimeType='application/vnd.google-apps.folder' \
                                     and parents='{parent_folder}'".format(parent_folder=parent_folder)).execute()
     return response['files']
@@ -168,7 +168,7 @@ def get_folder_id_by_name(name, team_drive_id):
     service = auth.get_service("drive")
 
     response = service.files().list(teamDriveId=team_drive_id, includeTeamDriveItems=True,
-                                    corpora='teamDrive', supportsTeamDrives=True,
+                                    corpora='teamDrive', supportsAllDrives=True,
                                     q="mimeType='application/vnd.google-apps.folder' \
                                     and name='{name}'".format(name=name)).execute()
 
