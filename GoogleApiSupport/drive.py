@@ -56,7 +56,8 @@ def copy_permissions(start_file_id, end_file_id, **kwargs):
     retrieve_fields = kwargs['fields'] if 'fields' in kwargs else '*'
     supports_all_drives = kwargs['supportsAllDrives'] if 'supportsAllDrives' in kwargs else False
     transfer_ownership = kwargs['transferOwnership'] if 'transferOwnership' in kwargs else False
-
+    send_notification_email = kwargs['sendNotificationEmail'] if 'sendNotificationEmail' in kwargs and transfer_ownership == False else True
+    
     # Retrieve permissions
     start_permissions = retrieve_permissions(file_id=start_file_id, fields=retrieve_fields)
 
@@ -78,7 +79,8 @@ def copy_permissions(start_file_id, end_file_id, **kwargs):
                                      email_address=email_address,
                                      domain=domain,
                                      supportsAllDrives=supports_all_drives,
-                                     transferOwnership=transfer_ownership)
+                                     transferOwnership=transfer_ownership,
+                                     sendNotificationEmail=send_notification_email)
             end_permissions = end_permissions.append(new_permission)
         except errors.HttpError as error:
             print('An error occurred: %s' % error)
