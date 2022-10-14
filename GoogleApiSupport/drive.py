@@ -1,5 +1,92 @@
 from GoogleApiSupport import auth
+from apiclient import errors
 
+# Permissions functions
+
+# https://developers.google.com/drive/api/v2/reference/permissions/list
+def retrieve_permissions(file_id, **kwargs):
+    """Retrieve a list of permissions.
+    Args:
+    file_id: ID of the file to retrieve permissions for.
+    Returns:
+    List of permissions.
+    """
+    service = auth.get_service("drive")
+    try:
+        permissions = service.permissions().list(fileId=file_id, **kwargs).execute()
+        return permissions.get('permissions', [])
+    except errors.HttpError as error:
+        print('An error occurred: %s' % error)
+
+# https://developers.google.com/drive/api/v2/reference/permissions/insert
+def insert_permission(file_id, perm_type, role, email_address=None, domain=None, **kwargs):
+    """Insert a new permission.
+    Args:
+    file_id: ID of the file to insert permission for.
+    perm_type: The value 'user', 'group', 'domain', 'anyone' or 'default'.
+    role: The value 'owner', 'writer' or 'reader'.
+    email_address: User or group e-mail address (needed if perm_type is 'user' or 'group')
+    domain: Domain name (needed if perm_type is 'domain')
+    Returns:
+    The inserted permission if successful, None otherwise.
+    """
+    service = auth.get_service("drive")
+    new_permission = {
+        'type': perm_type,
+        'role': role,
+        'emailAddress': email_address,
+        'domain': domain
+    }
+    try:
+        return service.permissions().create(fileId=file_id, body=new_permission, **kwargs).execute()
+    except errors.HttpError as error:
+        print('An error occurred: %s' % error)
+
+
+def copy_permissions(start_file_id, end_file_id, **kwargs):
+    """Copy permissions from one file to another.
+    Args:
+    start_file_id: ID of the file to retrieve permissions for.
+    end_file_id: ID of the file to insert permission for.
+    Returns:
+    The copied permissions if successful, None otherwise.
+    """
+    
+    # Values of needed kwargs
+    retrieve_fields = kwargs['fields'] if 'fields' in kwargs else '*'
+    supports_all_drives = kwargs['supportsAllDrives'] if 'supportsAllDrives' in kwargs else False
+    transfer_ownership = kwargs['transferOwnership'] if 'transferOwnership' in kwargs else False
+    send_notification_email = kwargs['sendNotificationEmail'] if 'sendNotificationEmail' in kwargs and transfer_ownership == False else True
+    
+    # Retrieve permissions
+    start_permissions = retrieve_permissions(file_id=start_file_id, fields=retrieve_fields)
+
+    # Insert permissions one by one
+    for permission in start_permissions:
+        perm_type = permission['type']
+        # Ownership transfers are not supported for files and folders in shared drives. - OR maybe yes with additional arg "supportAllDrives"
+        # Owndership transfer is only possible if service account has domain-wide authority
+        role = 'writer' if transfer_ownership == False and permission['role'] == 'owner' else permission['role']
+        # value: User or group e-mail address, domain name or None for  for 'anyone' or 'default' type.
+        email_address = permission['emailAddress'] if perm_type in ('user', 'group') else None
+        domain = permission['domain'] if perm_type == 'domain' else None
+            
+        end_permissions = list()
+        try:
+            new_permission = insert_permission(file_id=end_file_id,
+                                     perm_type=perm_type,
+                                     role=role,
+                                     email_address=email_address,
+                                     domain=domain,
+                                     supportsAllDrives=supports_all_drives,
+                                     transferOwnership=transfer_ownership,
+                                     sendNotificationEmail=send_notification_email)
+            end_permissions = end_permissions.append(new_permission)
+        except errors.HttpError as error:
+            print('An error occurred: %s' % error)
+    
+    print('Successfully transferred permissions from file {} to file {}'.format(start_file_id, end_file_id))
+    return end_permissions
 
 def get_file_name(file_id):
     service = auth.get_service("drive")
@@ -32,9 +119,10 @@ def delete_file(file_id):
     return response
 
 
-def copy_file(file_from_id, new_file_name='', suppots_all_drives = False):
+def copy_file(file_from_id, new_file_name='', supports_all_drives=False, transfer_permissions=False, **kwargs):
     """
     By passing an old file id, creates a copy and returns the id of the file copy
+    Set transfer_permissions to True if you want to transfer the permissions from the old file to the new file
     """
     print('Copying file {} with name {}'.format(file_from_id, new_file_name))
     body = {'name': new_file_name}
@@ -42,10 +130,17 @@ def copy_file(file_from_id, new_file_name='', suppots_all_drives = False):
     service = auth.get_service("drive")
     drive_response = service.files().copy(fileId=file_from_id,
                                           body=body,
-                                          supportsAllDrives=suppots_all_drives,
+                                          supportsAllDrives=supports_all_drives,
                                           ).execute()
-
+    
     new_file_id = drive_response.get('id')
+    
+    if transfer_permissions:
+        copy_permissions(start_file_id=file_from_id, 
+                         end_file_id=new_file_id, 
+                         supportsAllDrives=supports_all_drives,
+                         **kwargs)
+
     return new_file_id
 
 
