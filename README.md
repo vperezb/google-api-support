@@ -44,11 +44,11 @@ Some functions to make Google APIs more usable.
 
 ## Install
 
-'''pip install google-api-support'''
+`pip install google-api-support`
 
 You might need to install manually:
 
-'''pip install google-api-python-client httplib2 oauth2client pandas'''
+`pip install google-api-python-client httplib2 oauth2client pandas`
 
 ## Steps to use google Sheets API
 
@@ -60,29 +60,29 @@ https://console.developers.google.com
 
 0. Create google service account.
     0. Go to https://console.developers.google.com/projectselector/apis/credentials and create a new project.
-    ![Create a developers project](Documentation/img/create_project.PNG)
+    ![Create a developers project](docs/img/create_project.PNG)
     
     0. Create credentials.
-    ![](Documentation/img/choose_credentials.PNG)
+    ![](docs/img/choose_credentials.PNG)
         * In this first version, i will explain how to deal with Services accounts, so select "Service account key".
     
     0. Create a service account.
-    ![](Documentation/img/create_service_account.PNG)
+    ![](docs/img/create_service_account.PNG)
         * Download the .json file and KEEP IT SAFE.
     
     0. Now you have your service account created inside your new project.
-    ![](Documentation/img/create_service_account.PNG)
+    ![](docs/img/create_service_account.PNG)
     
     0. Copy your "user id" in "Manage service accounts" to use it later.
-        * It looks like this one: "first-service-account@example-id-175820.iam.gserviceaccount.com"
+        * It looks like this one: `first-service-account@example-id-175820.iam.gserviceaccount.com`
     
     0. Go to your dashboard screen and go to "ENABLE APIS AND SERVICES" to "unlock" the desired API calls.
     In our example, we will just enable "Google sheets API".
-    ![](Documentation/img/enable_apis.PNG)
-    ![](Documentation/img/activate_sheets.PNG)
+    ![](docs/img/enable_apis.PNG)
+    ![](docs/img/activate_sheets.PNG)
 
 
-## Save credentials file inside the project:
+## Check the specific credentials documentation file
 
-Create a folder named `.Credentials` and store newly downloaded credentials renaming them with `service_credentials.json`
+[Credentials documentation](/docs/setup_credentials.md)
 
