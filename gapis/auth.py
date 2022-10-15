@@ -6,7 +6,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 from apiclient.discovery import build
 from httplib2 import Http
 
-from GoogleApiSupport import apis
+from gapis import apis
 
 
 def get_service(api_name, service_credentials_path=None, additional_apis=[]):

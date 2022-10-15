@@ -1,12 +1,15 @@
 import pandas as pd
 
-from GoogleApiSupport import auth
+from gapis import auth
 
-"""A set of functions to interact with Google Spreadsheets. 
+"""A set of functions to interact with Google Spreadsheets documents. 
 Sales-wise the product is called "sheets" but I'm modifying the naming
 because it will help make the library unambiguous. As the entity "sheets" 
-inside the API its use for each of the sheets (pages) of the spreadsheet (document).
+inside the API is the name it has each of the sheets (pages) of the spreadsheet (document).
 https://www.google.com/intl/ca/sheets/about/
+
+.xlsx files can't be managed with the actual version of this library. You should "save as google sheets" 
+for the module to work.
 
 Naming convention:
     `spreadsheet` : The file, the full document. Its identifier it's the 
@@ -17,17 +20,17 @@ Naming convention:
         within a spreadsheet.
 """
 
-def get_sheet_info(sheet_id, include_grid_data=False):
+def get_sheet_info(spreadsheet_id, include_grid_data=False):
     """Returns an spreadsheet info object
 
     Args:
-        sheet_id (str): The id from the Spreadsheet. Long string with letters, numbers and characters
+        spreadsheet_id (str): The id from the Spreadsheet. Long string with letters, numbers and characters
         include_grid_data (bool): Passed to False, the function does not query the spreadsheet data, only the document information.
     Returns:
         dict: Object with a lot of sheet information such title, url, colors, alignment and much more.
     """
     service = auth.get_service("spreadsheets")
-    response = service.spreadsheets().get(spreadsheetId=sheet_id, includeGridData=include_grid_data).execute()
+    response = service.spreadsheets().get(spreadsheetId=spreadsheet_id, includeGridData=include_grid_data).execute()
     return response
 
 
@@ -53,11 +56,11 @@ def create(spreadsheet_title):
     return spreadsheet.get('spreadsheetId')
 
 
-def add_sheet_to_spreadsheet(sheet_id, sheet_name):
+def add_sheet_to_spreadsheet(spreadsheet_id, sheet_name):
     """Adds a new page to an existing spreadsheet.
 
     Args:
-        sheet_id (str): The objective spreadsheet id.
+        spreadsheet_id (str): The objective spreadsheet id.
         sheet_name (str): The desired name for the new sheet.
 
     Returns:
@@ -74,7 +77,7 @@ def add_sheet_to_spreadsheet(sheet_id, sheet_name):
         }
     ]}
 
-    response = service.spreadsheets().batchUpdate(spreadsheetId=sheet_id, body=data).execute()
+    response = service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=data).execute()
     #SHEET_ID = res['replies'][0]['addSheet']['properties']['sheet_id']
     return response
 
@@ -105,7 +108,7 @@ def change_sheet_title(newFileName, fileId):
     return
 
 
-def pandas_to_sheet(sheet_id, page_name, df, starting_cell='A1'):
+def pandas_to_sheet(spreadsheet_id, page_name, df, starting_cell='A1'):
     """Uploads a pandas.dataframe to the desired page of a google sheets sheet.
     SERVICE ACCOUNT MUST HAVE PERMISIONS TO WRITE IN THE SHEET.
     Aditionally, pass a list with the new names of the columns.    
@@ -141,7 +144,7 @@ def pandas_to_sheet(sheet_id, page_name, df, starting_cell='A1'):
         }
 
         result = service.spreadsheets().values().batchUpdate(
-            spreadsheetId=sheet_id,
+            spreadsheetId=spreadsheet_id,
             body=body
         ).execute()
 
@@ -152,16 +155,16 @@ def pandas_to_sheet(sheet_id, page_name, df, starting_cell='A1'):
 
 
 
-def get_sheet_names(sheet_id):
+def get_sheet_names(spreadsheet_id):
     """Get the names of the sheets in a spreadsheet.
 
     Args:
-        sheet_id (str): The id from the Spreadsheet. Long string with letters, numbers and characters
+        spreadsheet_id (str): The id from the Spreadsheet. Long string with letters, numbers and characters
 
     Returns:
         list: A list of the names of the sheets.
     """
-    response = get_sheet_info(sheet_id)
+    response = get_sheet_info(spreadsheet_id)
     return [a['properties']['title'] for a in response['sheets']]
 
 
