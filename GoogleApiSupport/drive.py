@@ -116,6 +116,7 @@ def move_file(file_id, folder_destination_id):
 def delete_file(file_id):
     service = auth.get_service("drive")
     response = service.files().delete(fileId=file_id).execute()
+    print(f"Deleted file: {file_id}")
     return response
 
 
