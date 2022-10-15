@@ -3,7 +3,29 @@ import pandas as pd
 from GoogleApiSupport import auth
 
 
+def get_sheet_info(sheetId, includeGridData=False):
+    """Returns an spreadsheet info object
+
+    Args:
+        sheetId (str): The id from the Spreadsheet. Long string with letters, numbers and characters
+        includeGridData (bool): Passed to False, the function does not query the spreadsheet data, only the document information.
+    Returns:
+        dict: Object with a lot of sheet information such title, url, colors, alignment and much more.
+    """
+    service = auth.get_service("sheets")
+    response = service.spreadsheets().get(spreadsheetId=sheetId, includeGridData=includeGridData).execute()
+    return response
+
+
 def create(title):
+    """Creates in your root user folder a file type spreadsheet with a single sheet. Use move file from drive api to move it to the desired final location.
+
+    Args:
+        title (str): The desired title for the created sheet.
+
+    Returns:
+        string: The id from the created file
+    """
     service = auth.get_service("sheets")
     spreadsheet = {
         'properties': {
@@ -18,7 +40,15 @@ def create(title):
 
 
 def add_sheet_to_spreadsheet(sheetId, newSheetName):
-    '''Adds a new page.'''
+    """Adds a new page to an existing spreadsheet.
+
+    Args:
+        sheetId (str): The objective spreadsheet id.
+        newSheetName (str): The desired name for the new sheet.
+
+    Returns:
+        dict: Full response object from the Google API
+    """
 
     service = auth.get_service("sheets")
     
@@ -36,6 +66,12 @@ def add_sheet_to_spreadsheet(sheetId, newSheetName):
 
 
 def change_sheet_title(newFileName, fileId):
+    """Updates spreadsheet title.
+
+    Args:
+        newFileName (str): _description_
+        fileId (str): The id from the Spreadsheet. Long string with letters, numbers and characters
+    """
     service = auth.get_service("sheets")
 
     body = {
@@ -56,12 +92,20 @@ def change_sheet_title(newFileName, fileId):
 
 
 def pandas_to_sheet(sheetId, pageName, df, startingCell='A1'):
-    '''
-    Uploads a pandas.dataframe to the desired page of a google sheets sheet.
+    """Uploads a pandas.dataframe to the desired page of a google sheets sheet.
     SERVICE ACCOUNT MUST HAVE PERMISIONS TO WRITE IN THE SHEET.
     Aditionally, pass a list with the new names of the columns.    
     Data must be utf-8 encoded to avoid errors.
-    '''
+
+    Args:
+        sheetId (str): The id from the Spreadsheet. Long string with letters, numbers and characters
+        pageName (str): The target name of the page to upload the DataFrame
+        df (pd.DataFrame): The dataframe to be uploaded.
+        startingCell (str, optional): The cell in the sheet where the data will be uploaded. Defaults to 'A1'.
+
+    Returns:
+        _type_: _description_
+    """
 
     service = auth.get_service("sheets")
 
@@ -92,18 +136,31 @@ def pandas_to_sheet(sheetId, pageName, df, startingCell='A1'):
     except Exception as e:
         print(e)
 
-def get_sheet_info(sheetId):
-    service = auth.get_service("sheets")
-    response = service.spreadsheets().get(spreadsheetId=sheetId).execute()
-    return response
 
 
 def get_sheet_names(sheetId):
+    """Get the names of the sheets in a spreadsheet.
+
+    Args:
+        sheetId (str): The id from the Spreadsheet. Long string with letters, numbers and characters
+
+    Returns:
+        list: A list of the names of the sheets.
+    """
     response = get_sheet_info(sheetId)
     return [a['properties']['title'] for a in response['sheets']]
 
 
 def get_sheet_charts(spreadsheetId, sheetName):
+    """Returns a list of the charts in a specific sheet
+
+    Args:
+        spreadsheetId (str): Id of the desired document
+        sheetName - Name of the desired page 'Hoja1'
+
+    Returns:
+        list: returns a list of the charts.
+    """
     sheet = get_sheet_info(spreadsheetId)
     for sheet_page in sheet['sheets']:
         if sheet_page['properties']['title']==sheetName:
@@ -111,14 +168,21 @@ def get_sheet_charts(spreadsheetId, sheetName):
 
 
 def sheet_to_pandas(spreadsheetId, sheetName='', sheetRange='', index='', has_header=True ):
-    '''
-    PARAMETERS:
-        service - Api service
-        spreadsheetId - Id of the desired document
-        sheetName - Name of the desired page 'Hoja1' (optional) (by default: first page)
+    """spreadsheetId - Id of the desired document
+        sheetName - Name of the desired page 'Hoja1' (by default: first page)
         sheetRange - Range of the desired info 'A1:C6' (optional) (by default: WHOLE PAGE)
         index - column you want to be the index of the resulting dataframe (optional) (by default: none of the columns is set as index)
-    '''
+
+    Args:
+        spreadsheetId (_type_): Id of the desired document
+        sheetName (str, optional): Name of the desired page 'Hoja1'. (by default: first page). Defaults to ''.
+        sheetRange (str, optional): Range of the desired info 'A1:C6'.(by default: WHOLE PAGE). Defaults to ''.
+        index (str, optional): column you want to be the index of the resulting dataframe (by default: none of the columns is set as index). Defaults to ''.
+        has_header (bool, optional): If the sheet has a header. If not, a dummy header is created. Defaults to True.
+
+    Returns:
+        pd.DataFrame: The output dataframe.
+    """
     service = auth.get_service("sheets")
     if (sheetRange != ''):
         sheetRange = '!'+sheetRange
@@ -136,7 +200,7 @@ def sheet_to_pandas(spreadsheetId, sheetName='', sheetRange='', index='', has_he
         for row in newresult['values']:
             if len(row) > max_len:
                 max_len = len(row)
-        headers = get_range_column_names(max_len)
+        headers = __get_range_column_names(max_len)
 
     if (index == ''):
         return pd.DataFrame(newresult['values'], columns=headers)
@@ -145,6 +209,13 @@ def sheet_to_pandas(spreadsheetId, sheetName='', sheetRange='', index='', has_he
 
 
 def clear_sheet(spreadsheetId, sheetName, sheetRange=''):
+    """Deletes the data in the selected area
+
+    Args:
+        spreadsheetId (str): _description_
+        sheetName (str): _description_
+        sheetRange (str, optional): _description_. Defaults to ''.
+    """
     service = auth.get_service("sheets")
     if (sheetRange != ''):
         sheetRange = '!'+sheetRange
@@ -156,7 +227,7 @@ def clear_sheet(spreadsheetId, sheetName, sheetRange=''):
 
 # Complementary functions
 
-def get_column_name(n):
+def __get_column_name(n):
 
 	# initialize output string as empty
 	result = ''
@@ -173,8 +244,8 @@ def get_column_name(n):
 
 	return result[::-1]
 
-def get_range_column_names(r):
+def __get_range_column_names(r):
     output = []
     for i in range(r):
-        output.append(get_column_name(i))
+        output.append(__get_column_name(i))
     return output
