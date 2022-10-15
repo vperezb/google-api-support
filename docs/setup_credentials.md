@@ -7,13 +7,12 @@
 * Download service credentials json
 * When raising the work environment, set the environment variable `GOOGLE_APPLICATION_CREDENTIALS` with the path for your credentials
 
-
 ### Creating a service account in Google
 
 https://cloud.google.com/docs/authentication/production#creating_a_service_account
 
 
-### Create credentials (OLD / not robust)
+### Create credentials (OLD / not robust) [TO DELETE]
 
 * Create a project in https://console.cloud.google.com
 * Download service credentials json

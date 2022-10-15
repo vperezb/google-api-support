@@ -2,6 +2,17 @@
 
 Some functions to make Google APIs more usable. 
 
+## Install
+
+`pip install google-api-support`
+
+# contribute
+
+  <a href="https://discord.gg/ZByQsmxR" target="_blank">
+    <img src="https://img.shields.io/discord/308323056592486420?logo=discord" alt="Discord Chat" />
+  </a>
+
+
 ## Functions avaliable
 
 * Sheets
@@ -41,14 +52,9 @@ Some functions to make Google APIs more usable.
     * Get folder id by path
     * Download file
 
+* Storage
+    * Upload a file to google storage and get its URL
 
-## Install
-
-`pip install google-api-support`
-
-You might need to install manually:
-
-`pip install google-api-python-client httplib2 oauth2client pandas`
 
 ## Steps to use google Sheets API
 
@@ -86,3 +92,18 @@ https://console.developers.google.com
 
 [Credentials documentation](/docs/setup_credentials.md)
 
+## Manually install dependencies
+
+`pip install httplib2 oauth2client pandas google-api-python-client`
+
+
+## Complete first use example
+
+#### Example using virtualenv in bash terminal
+
+`virtualenv venv`
+`pip install google-api-support`
+`pip install jupyterlab`
+`source venv/Scripts/activate`
+`export GOOGLE_APPLICATION_CREDENTIALS=C:/path/to/my/service_account_credentials.json`
+`jupyter lab`
