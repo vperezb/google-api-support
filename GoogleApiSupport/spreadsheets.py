@@ -1,6 +1,6 @@
 import pandas as pd
 
-from gapis import auth
+from GoogleApiSupport import auth
 
 """A set of functions to interact with Google Spreadsheets documents. 
 Sales-wise the product is called "sheets" but I'm modifying the naming
@@ -20,7 +20,7 @@ Naming convention:
         within a spreadsheet.
 """
 
-def get_sheet_info(spreadsheet_id, include_grid_data=False):
+def get_info(spreadsheet_id, include_grid_data=False):
     """Returns an spreadsheet info object
 
     Args:
@@ -56,7 +56,7 @@ def create(spreadsheet_title):
     return spreadsheet.get('spreadsheetId')
 
 
-def add_sheet_to_spreadsheet(spreadsheet_id, sheet_name):
+def add_sheet(spreadsheet_id, sheet_name):
     """Adds a new page to an existing spreadsheet.
 
     Args:
@@ -164,7 +164,7 @@ def get_sheet_names(spreadsheet_id):
     Returns:
         list: A list of the names of the sheets.
     """
-    response = get_sheet_info(spreadsheet_id)
+    response = get_info(spreadsheet_id)
     return [a['properties']['title'] for a in response['sheets']]
 
 
@@ -178,13 +178,13 @@ def get_sheet_charts(spreadsheet_id, sheet_name):
     Returns:
         list: returns a list of the charts.
     """
-    sheet = get_sheet_info(spreadsheet_id)
+    sheet = get_info(spreadsheet_id)
     for sheet_page in sheet['sheets']:
         if sheet_page['properties']['title']==sheet_name:
             return sheet_page['charts']
 
 
-def sheet_to_pandas(spreadsheet_id, sheet_name='', sheet_range='', index='', has_header=True ):
+def save_sheet_to_pandas(spreadsheet_id, sheet_name='', sheet_range='', index='', has_header=True ):
     """spreadsheet_id - Id of the desired document
         sheet_name - Name of the desired page 'Hoja1' (by default: first page)
         sheet_range - Range of the desired info 'A1:C6' (optional) (by default: WHOLE PAGE)
