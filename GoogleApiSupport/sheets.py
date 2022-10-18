@@ -1,7 +1,14 @@
 import pandas as pd
+import logging
 
 from GoogleApiSupport import auth
 
+
+logging.warning("""
+            [DeprecationWarning] sheets module will be deprecated in favor to spreadsheets.
+            1 - modify the import from `sheets` to `spreadsheets`. (from GoogleApiSupport import spreadsheets)
+            2 - Some functions are been renamed to make it more easy to read. If you have a name error check for the new function's name""")
+    
 
 def get_sheet_info(sheetId, includeGridData=False):
     """Returns an spreadsheet info object

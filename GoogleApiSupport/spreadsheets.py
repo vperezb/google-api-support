@@ -18,6 +18,13 @@ Naming convention:
     `sheet` : Each of the pages of a `spreadsheet`. The `sheet_name` is both the
         identifier and the "user friendly name". Because of that must be unique 
         within a spreadsheet.
+        
+Google API naming | Library naming
+spreadsheet | spreadsheet
+spreadsheetId | spreadsheet_id
+spreadsheet.properties.title | spreadsheet_title
+sheet.properties.title | sheet_name
+sheet.properties.sheetId | sheet_id
 """
 
 def get_info(spreadsheet_id, include_grid_data=False):
@@ -82,30 +89,54 @@ def add_sheet(spreadsheet_id, sheet_name):
     return response
 
 
-def change_sheet_title(newFileName, fileId):
+def change_title(spreadsheet_title, spreadsheet_id):
     """Updates spreadsheet title.
 
     Args:
-        newFileName (str): _description_
-        fileId (str): The id from the Spreadsheet. Long string with letters, numbers and characters
+        spreadsheet_title (str): The new title we want to set to the spreadsheet
+        spreadsheet_id (str): The id from the Spreadsheet. Long string with letters, numbers and characters
     """
     service = auth.get_service("spreadsheets")
 
     body = {
         "requests": [{
             "updateSpreadsheetProperties": {
-                "properties": {"title": newFileName},
+                "properties": {"title": spreadsheet_title},
                 "fields": "title"
             }
         }]
     }
 
     service.spreadsheets().batchUpdate(
-        spreadsheetId=fileId,
+        spreadsheetId=spreadsheet_id,
         body=body
     ).execute()
 
     return
+
+def delete_sheet(spreadsheet_id, sheet_id):
+    """_summary_
+
+    Args:
+        spreadsheet_id (_type_): _description_
+        sheet_name (_type_): _description_
+    """
+    service = auth.get_service("spreadsheets")
+
+    body = {
+        "requests": [{
+            "deleteSheet": {
+                "sheetId": sheet_id
+            }
+        }]
+    }
+
+    response = service.spreadsheets().batchUpdate(
+        spreadsheetId=spreadsheet_id,
+        body=body
+    ).execute()
+
+    return response
 
 
 def pandas_to_sheet(spreadsheet_id, page_name, df, starting_cell='A1'):
@@ -154,6 +185,22 @@ def pandas_to_sheet(spreadsheet_id, page_name, df, starting_cell='A1'):
         print(e)
 
 
+def get_sheets(spreadsheet_id, only_names = False):
+    """Get the names of the sheets in a spreadsheet.
+
+    Args:
+        spreadsheet_id (str): The id from the Spreadsheet. Long string with letters, numbers and characters
+
+    Returns:
+        list: A list of the names of the sheets.
+    """
+    response = get_info(spreadsheet_id)
+    
+    if only_names:
+        [a['properties']['title'] for a in response['sheets']]
+    else: 
+        return response['sheets']
+    
 
 def get_sheet_names(spreadsheet_id):
     """Get the names of the sheets in a spreadsheet.
