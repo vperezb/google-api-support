@@ -101,7 +101,7 @@ In order to use Google APIs you will need to authenticate, this steps guide you 
 
 Recently added the first test using unittest.
 
-Can be executed by doing `python -m unittest test/test_sheets.py`
+Can be executed by doing `python -m unittest test/test_spreadsheets.py`
 
 ## Complete first use example
 
