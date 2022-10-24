@@ -175,7 +175,7 @@ class GoogleDriveFile:
         """
 
         # file_name takes precedence over mine_type and extension
-        export_formats = utils.export_types()
+        export_formats = utils.google_export_types()
         
         # Extract formats that are accepted for the specific file type
         acceptable_formats = export_formats[export_formats['from_mime_type'] == self.mime_type]
@@ -291,4 +291,49 @@ class GoogleDriveFile:
         print('Copying file {} with name {}'.format(self.file_id, new_file_name))
 
         return new_file
+       
+class GoogleDriveFolder(GoogleDriveFile):
+    
+    # @classmethod
+    # def create(cls, 
+    #            file_name, 
+    #            parent_folder_id=None, 
+    #            transfer_permissions=False, 
+    #            **kwargs):
+    #     new_folder = super().create(file_name=file_name,
+    #                                 mime_type='application/vnd.google-apps.folder',
+    #                                 parent_folder_id=parent_folder_id,
+    #                                 transfer_permissions=transfer_permissions,
+    #                                 **kwargs)
+        
+    #     return new_folder
+
+    def children(self, which='all', mime_type=None):
+        """Show child files of the folder.
+        
+        Args:
+            which (str, optional): Which types of files: 'all' for everything, 'folders' for folders or 'specific' for a specific type (indicate the MIME type). Defaults to 'all'.
+            mime_type (str, optional): MIME type of specific file to show (only if which='specific'). Defaults to None.
+        """
+        
+        general_query="parents='{folder}'".format(folder=self.file_id)
+        # If you want to show all files, inpute nothing
+        if which=='all':
+            query=general_query
+        # If you want to show child folders, inpute the mime type for folders
+        elif which=='folders':
+            query=general_query+" and mimeType='application/vnd.google-apps.folder'"
+        # Otherwise, try the give MIME type
+        elif which=='specific':
+            try:
+                 query=general_query+" and mimeType='{mime_type}'".format(mime_type=mime_type)
+            except errors.HttpError as error:
+                print('An error occurred: %s' % error)
+                
+        response = self.service.files().list(q=query).execute()
+        
+        # TODO: Maybe return list of files as GoogleDriveFile object
+        # [GoogleDriveFile(file_id=file.get('id')) for file in response.get('files')]      
+        # Issue: How to handle case in which the files are folders?
+        return response.get('files')
     

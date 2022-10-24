@@ -4,6 +4,7 @@ import mimetypes
 import openxmllib # https://pythonhosted.org/openxmllib/mimetypes-adds.html
 from GoogleApiSupport import auth
 from apiclient import errors
+import sys
 
 # https://stackoverflow.com/questions/17317219/is-there-an-platform-independent-equivalent-of-os-startfile
 def start_file(path):
@@ -123,4 +124,4 @@ def google_export_types():
                                inplace=True)
     
     return export_formats
-    
+
