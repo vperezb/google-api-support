@@ -1,10 +1,12 @@
 from GoogleApiSupport import auth
 from dev import utils
 from apiclient import errors
+import mimetypes
 import io
 import os
 import pandas as pd
 from googleapiclient.http import MediaIoBaseDownload
+from googleapiclient.http import MediaFileUpload
 import webbrowser
 
 # TODO: type hinting
@@ -22,21 +24,48 @@ class GoogleDriveFile:
         permissions (list): List of dictionaries containing the permissions to the file in Google Drive. 
 
     Methods:
-
+        create: Create new file in Google Drive.
+        rename: Change file name.
+        share: Share file with someone (or anyone).
+        open: Open file in browser.
+        download: Download file (for non Google Workspace files).
+        export: Export file (for Google Workspace files).
+        move: Move file into a new folder.
+        delete: Delete file from Google Drive.
+        copy: Copy file.
     """
     
-    service = auth.get_service("drive")
-    
-    def __init__(self, file_id=None):        
+    service = auth.get_service('drive')
+            
+    def __init__(self, file_id=None):
         if file_id is not None: 
-            # File information
-            file_info = self.service.files().get(fileId=file_id, fields='*').execute()
-            self.file_id = file_id
-            self.file_name = file_info.get('name')
-            self.mime_type = file_info.get('mimeType')
-            self.url = file_info.get('webViewLink')
-            self.parent_folder_id = file_info.get('parents')[0] if file_info.get('parents') is not None else None
-            self.permissions = file_info.get('permissions')
+            # File information 
+            self._info = self.service.files().get(fileId=file_id, fields='*').execute()
+
+    # Properties
+    @property
+    def file_id(self):
+        return self._info.get('id')
+
+    @property
+    def file_name(self):
+        return self._info.get('name')
+
+    @property
+    def mime_type(self):
+        return self._info.get('mimeType')
+
+    @property
+    def url(self):
+        return self._info.get('webViewLink')
+    
+    @property
+    def parent_folder_id(self):
+        return self._info.get('parents')[0] if self._info.get('parents') is not None else None
+        
+    @property
+    def permissions(self):
+        return self._info.get('permissions')
             
     @classmethod
     def create(cls, file_name, mime_type, parent_folder_id=None, transfer_permissions=False, **kwargs):
@@ -67,16 +96,24 @@ class GoogleDriveFile:
 
         # File information
         new_file = cls(file_id=new_file_id)
+        print('Created file {} with name {}'.format(new_file_id, file_name))
 
         if transfer_permissions:
-            parent_folder = cls(file_id=parent_folder_id)
+            parent_folder = GoogleDriveFile(file_id=parent_folder_id)
             utils.copy_permissions(start_file=parent_folder, end_file=new_file, **kwargs)
             # new_permissions = self.service.files().get(fileId=new_file_id, fields='permissions').execute()
             # self.permissions = new_permissions.get('permissions')
 
-        print('Created file {} with name {}'.format(new_file_id, file_name))
-
         return new_file
+
+    def rename(self, new_file_name):
+        old_file_name = self.file_name
+        try:
+            response = self.service.files().update(fileId=self.file_id, body={'name':new_file_name}, fields='*').execute()
+            self._info = response
+            print('File name changed from "{old}" to "{new}".'.format(old=old_file_name, new=new_file_name))
+        except errors.HttpError as error:
+            print('An error occurred: %s' % error)
         
     def share(self, perm_type, role, email_address=None, domain=None, **kwargs):
         """Method to add new permission to file or change current one.
@@ -248,8 +285,10 @@ class GoogleDriveFile:
                                                    addParents=destination_folder_id,
                                                    removeParents=self.parent_folder_id,
                                                    supportsAllDrives=True,
-                                                   fields='id, parents').execute()
-            self.parent_folder_id = response.get('parents')[0]
+                                                #    fields='id, parents').execute()
+                                                    fields='*').execute()
+            self._info = response
+            # self.parent_folder_id = response.get('parents')[0]
             print("File moved")
         except errors.HttpError as error:
             print('An error occurred: %s' % error)
@@ -258,10 +297,13 @@ class GoogleDriveFile:
         """Method to delete file.
         """
         try:
+            id = self.file_id
+            name = self.file_name
             self.service.files().delete(fileId=self.file_id).execute()
+            self._info = 'File does not exist.'
         except errors.HttpError as error:
             print('An error occurred: %s' % error)
-        print(f"Deleted file: {self.file_id} - {self.file_name}")
+        print(f"Deleted file: {id} - {name}")
         
     def copy(self, new_file_name='', supports_all_drives=True, transfer_permissions=False, **kwargs):
         """Method to create a copy of the current file.
@@ -294,19 +336,22 @@ class GoogleDriveFile:
        
 class GoogleDriveFolder(GoogleDriveFile):
     
-    # @classmethod
-    # def create(cls, 
-    #            file_name, 
-    #            parent_folder_id=None, 
-    #            transfer_permissions=False, 
-    #            **kwargs):
-    #     new_folder = super().create(file_name=file_name,
-    #                                 mime_type='application/vnd.google-apps.folder',
-    #                                 parent_folder_id=parent_folder_id,
-    #                                 transfer_permissions=transfer_permissions,
-    #                                 **kwargs)
-        
-    #     return new_folder
+    def __new__(cls, file_id=None):
+        mime_type = cls.service.files().get(fileId=file_id, fields='*').execute().get('mimeType')
+        assert mime_type == 'application/vnd.google-apps.folder', 'The file is of type "{type}", but it needs to be a folder to be of this class type.'.format(type=mime_type)
+        return super().__new__(cls)
+    
+    def __init__(self, file_id=None):
+        super().__init__(file_id=file_id)
+
+    @classmethod
+    def create(cls, file_name, parent_folder_id=None, transfer_permissions=False, **kwargs):
+        new_file = super().create(file_name=file_name, 
+                                  mime_type='application/vnd.google-apps.folder',
+                                  parent_folder_id=parent_folder_id, 
+                                  transfer_permissions=transfer_permissions, 
+                                  **kwargs)     
+        return new_file
 
     def children(self, which='all', mime_type=None):
         """Show child files of the folder.
@@ -337,3 +382,34 @@ class GoogleDriveFolder(GoogleDriveFile):
         # Issue: How to handle case in which the files are folders?
         return response.get('files')
     
+    def upload_file(self, origin_path, transfer_permissions=False, start_url=False, **kwargs):
+        
+        # Get information of original file
+        (folder_path, file_name) = os.path.split(origin_path)
+        (name_ext, extension_ext) = os.path.splitext(file_name)
+        extension_ext = extension_ext.lower()
+        types = mimetypes.types_map
+        mime_type = types.get(extension_ext)
+        
+        # Request
+        try:
+            file_metadata = {'name': file_name,
+                            'parents': [self.file_id]}
+            media = MediaFileUpload(origin_path,
+                                    mimetype=mime_type,
+                                    resumable=True)
+            response = self.service.files().create(body=file_metadata,
+                                                   media_body=media,
+                                                   fields='id').execute()
+            print('Uploaded file "{name}" with ID {id}'.format(name=file_name, id=response.get('id')))
+        except errors.HttpError as error:
+            print('An error occurred: %s' % error)
+
+        if transfer_permissions:
+            new_file = GoogleDriveFile(file_id=response.get('id'))
+            new_file = utils.copy_permissions(start_file=self, end_file=new_file, 
+                                              supportsAllDrives=True, **kwargs)
+            
+        if start_url:
+            new_file = GoogleDriveFile(file_id=response.get('id'))
+            new_file.open()

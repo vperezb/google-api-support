@@ -54,6 +54,9 @@ file_copied = file_created.copy(new_file_name='Class Test - Copy',
                                 transfer_permissions=True,
                                 sendNotificationEmail=False)
 
+# Rename file
+file_created.rename(new_file_name='Another class test')
+
 # Folder #
 ##########
 
@@ -64,35 +67,6 @@ folder.permissions
 # Show info for Google Docs files in the folder
 folder.children(which='specific', mime_type='application/vnd.google-apps.document')
 
-
-##########
-# sheets #
-##########
-
-# Initialize with file id
-spreadsheet_id = '145f49AjFuS31dAw9GXYvgRlmxZIDyg0P6Z4O_052Pxw'
-spreadsheet_from_id = sheets.GoogleSheets(file_id=spreadsheet_id)
-vars(spreadsheet_from_id)
-
-# Properties
-spreadsheet_from_id.sheets_ids
-spreadsheet_from_id.sheets_names
-
-# Add sheet
-spreadsheet_from_id.add_sheet(sheet_name='Testing')
-
-# Delete sheet
-spreadsheet_from_id.delete_sheet(sheet_id=681015510)
-
-# Data from sheet
-data = spreadsheet_from_id.sheet_to_df(sheet_name='Sheet3')
-data
-
-# Data to sheet
-new_data = pd.DataFrame({'col1':[1, 1, 1, 1, 1],
-                        'col2':[3, 3, 3, 3, 3],
-                        'col3':[4, 5, np.NaN, 5, 5]})
-spreadsheet_from_id.df_to_sheet(df=new_data, sheet_name='New sheet')
-
-# Clear sheet
-spreadsheet_from_id.clear_sheet(sheet_name='Sheet1')
+# Upload file into folder
+folder.upload_file(origin_path='../../Desktop/IMG_1729.JPG',
+                   start_url=True)
