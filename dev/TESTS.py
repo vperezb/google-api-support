@@ -70,3 +70,47 @@ folder.children(which='specific', mime_type='application/vnd.google-apps.documen
 # Upload file into folder
 folder.upload_file(origin_path='../../Desktop/IMG_1729.JPG',
                    start_url=True)
+
+#########
+# sheets #
+##########
+
+# Initialize with file id
+spreadsheet_id = '145f49AjFuS31dAw9GXYvgRlmxZIDyg0P6Z4O_052Pxw'
+spreadsheet_from_id = sheets.GoogleSheets(file_id=spreadsheet_id)
+vars(spreadsheet_from_id)
+
+# Properties
+spreadsheet_from_id.file_name
+spreadsheet_from_id.sheets_ids
+spreadsheet_from_id.sheets_names
+
+# Sheet URl
+spreadsheet_from_id.sheet_url(sheet_id=0)
+
+# Open sheet
+spreadsheet_from_id.open(sheet_id=1809942099)
+
+# Add sheet
+spreadsheet_from_id.add_sheet(sheet_name='Beginning', index=0)
+
+# Delete sheet
+spreadsheet_from_id.delete_sheet(sheet_id=681015510)
+
+# Data from sheet
+data = spreadsheet_from_id.sheet_to_df(sheet_name='Sheet3')
+data
+
+# Data to sheet
+new_data = pd.DataFrame({'col1':[1, 1, 1, 1, 1],
+                        'col2':[3, 3, 3, 3, 3],
+                        'col3':[4, 5, np.NaN, 5, 5]})
+spreadsheet_from_id.df_to_sheet(df=new_data, sheet_name='New sheet')
+
+# Clear sheet
+spreadsheet_from_id.clear_sheet(sheet_name='Sheet1')
+
+# Create new spreadsheet
+new_spreadsheet = sheets.GoogleSheets.create(file_name='It works',
+                                             parent_folder_id='1SNyrByFiT--CqHW3s0IWHGmXN7G_2o7H',
+                                             transfer_permissions=True)

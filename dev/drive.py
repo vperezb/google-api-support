@@ -96,7 +96,7 @@ class GoogleDriveFile:
 
         # File information
         new_file = cls(file_id=new_file_id)
-        print('Created file {} with name {}'.format(new_file_id, file_name))
+        print('Created file {} with name "{}"'.format(new_file_id, file_name))
 
         if transfer_permissions:
             parent_folder = GoogleDriveFile(file_id=parent_folder_id)
@@ -125,6 +125,13 @@ class GoogleDriveFile:
             domain (str, optional): Domain name (needed if perm_type is 'domain'). Defaults to None.
         """
         
+        if perm_type in ('user', 'group'):
+            shared_to = email_address
+        elif perm_type == 'domain':
+            shared_to = domain
+        elif perm_type in ('anyone', 'default'):
+            shared_to = perm_type
+        
         new_permission = {
             'type': perm_type,
             'role': role,
@@ -142,7 +149,7 @@ class GoogleDriveFile:
                 old_permission = [perm for perm in self.permissions if perm.get('id') == new_permission_id][0]
                 self.permissions.remove(old_permission)
             self.permissions.append(new_permission_resource)  
-            print('Inserted {} permission for {}'.format(new_permission_resource.get('role'), new_permission_resource.get('id')))
+            print('Inserted {} permission for "{}"'.format(new_permission_resource.get('role'), shared_to))
         except errors.HttpError as error:
             print('An error occurred: %s' % error)
     
