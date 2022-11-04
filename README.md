@@ -95,13 +95,7 @@ In order to use Google APIs you will need to authenticate, this steps guide you 
 
 ## Manually install dependencies
 
-`pip install httplib2 oauth2client pandas google-api-python-client`
-
-## How to test
-
-Recently added the first test using unittest.
-
-Can be executed by doing `python -m unittest test/test_spreadsheets.py`
+`pip install httplib2 oauth2client pandas google-api-python-client google.auth.transport.requests google.oauth2.credentials google_auth_oauthlib.flow`
 
 ## Complete first use example
 

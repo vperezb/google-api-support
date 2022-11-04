@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="google-api-support",
-    version="0.0.14",
+    version="0.1.0",
     author="Víctor Pérez Berruezo",
     author_email="victor.perez.berruezo@gmail.com",
     description="In this package you will find functions to deal with google apis. Sheets, Drive, Storage and Slides",
@@ -24,5 +24,8 @@ setup(
         "oauth2client",
         "pandas",
         "google-cloud-storage",
+        "google.auth.transport.requests",
+        "google.oauth2.credentials",
+        "google_auth_oauthlib.flow"
     ],
 )
