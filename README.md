@@ -94,8 +94,7 @@ https://console.developers.google.com
 
 ## Manually install dependencies
 
-`pip install httplib2 oauth2client pandas google-api-python-client`
-
+`pip install httplib2 oauth2client pandas google-api-python-client google.auth.transport.requests google.oauth2.credentials google_auth_oauthlib.flow`
 
 ## Complete first use example
 
