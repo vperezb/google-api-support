@@ -45,7 +45,10 @@ def get_service(api_name, service_credentials_path=None, oauth_credentials_path=
        
     elif not service_credentials_path: 
         oauth_credentials_path = get_oauth_credentials_path(oauth_credentials_path)
-
+        # we enable at once all the scopes needed when using the lib, otherwise we'll need to manage
+        # deleting old token.json files when changing from one scope to the other
+        scopes = apis.all_scopes()
+        
         creds = None
         # The file token.json stores the user's access and refresh tokens, and is
         # created automatically when the authorization flow completes for the first
