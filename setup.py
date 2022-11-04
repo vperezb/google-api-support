@@ -24,5 +24,8 @@ setup(
         "oauth2client",
         "pandas",
         "google-cloud-storage",
+        "google.auth.transport.requests",
+        "google.oauth2.credentials",
+        "google_auth_oauthlib.flow"
     ],
 )

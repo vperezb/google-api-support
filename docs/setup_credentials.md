@@ -1,11 +1,17 @@
 ## Credentials for using google sheets, google slides and google drive APIs
 
 
-### Create credentials RECOMMENDED
+### Create service credentials RECOMMENDED
 
 * Create a project in https://console.cloud.google.com
 * Download service credentials json
 * When raising the work environment, set the environment variable `GOOGLE_APPLICATION_CREDENTIALS` with the path for your credentials
+
+### Create OAuth credentials RECOMMENDED
+
+* Create a project in https://console.cloud.google.com
+* Download OAuth credentials json
+* When raising the work environment, set the environment variable `GOOGLE_OAUTH_CREDENTIALS` with the path for your credentials
 
 ### Creating a service account in Google
 
