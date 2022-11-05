@@ -1,5 +1,6 @@
 import os, sys, subprocess
 import pandas as pd
+from numpy import isnan
 import mimetypes
 import openxmllib # https://pythonhosted.org/openxmllib/mimetypes-adds.html
 from GoogleApiSupport import auth
@@ -60,7 +61,6 @@ def copy_permissions(start_file, end_file, **kwargs):
             
         return end_file
             
-
 def drive_about(fields='*'):
     """Function to get information about the Drive and the system capabilities.
     Uses the following: https://developers.google.com/drive/api/v3/reference/about/get
@@ -124,4 +124,30 @@ def google_export_types():
                                inplace=True)
     
     return export_formats
+
+# https://developers.google.com/slides/api/concepts/page-elements
+def page_element_kinds():
+    return ['elementGroup', 'shape', 'image', 'video', 'line', 'table', 'wordArt', 'sheetsChart']
+
+def validate_color(slides_file, color_type):
+    """Check if color type is inside the file master colors.
+
+    Args:
+        slides_file (GoogleSlides): Object of GoogleSlides class.
+        color_type (str): Type of color.
+
+    Returns:
+        dict: Dictionary with RGB colors.
+    """
+    color_styles = slides_file.master_colors
+    row = color_styles[color_styles['type'] == color_type]
+    assert not row.empty, 'Color type needs to be ones available inside the master colors.'
+    rgb_color = {}
+    if not isnan(float(row['red'])):
+        rgb_color.update({'red':float(row['red'])})
+    if not isnan(float(row['green'])):
+        rgb_color.update({'green':float(row['green'])})                  
+    if not isnan(float(row['blue'])):
+        rgb_color.update({'blue':float(row['blue'])})
+    return rgb_color
 

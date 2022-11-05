@@ -10,6 +10,7 @@ os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = os.path.join(ROOT_DIR, ".credenti
 
 from dev import drive
 from dev import sheets
+from dev import slides
 import pandas as pd
 import numpy as np
 
@@ -114,3 +115,78 @@ spreadsheet_from_id.clear_sheet(sheet_name='Sheet1')
 new_spreadsheet = sheets.GoogleSheets.create(file_name='It works',
                                              parent_folder_id='1SNyrByFiT--CqHW3s0IWHGmXN7G_2o7H',
                                              transfer_permissions=True)
+
+from GoogleApiSupport import slides
+
+shapes = slides.get_all_shapes_placeholders(presentation_id='1lg-skFt676nQdQ0tUbb_3y4F8_82-hKacEj23unuxdk')
+
+
+presentation = slides.GoogleSlides(file_id='1lg-skFt676nQdQ0tUbb_3y4F8_82-hKacEj23unuxdk')
+
+
+
+
+# Add table
+page_id='SLIDES_API1912518732_0'
+n_rows=3
+n_cols=11
+header=True
+color='DARK1'
+
+
+
+df = pd.DataFrame({'var1': [1, 2, 3],
+                   'var2': [4, 5, 6],
+                   'var3': [7, 8 , 9]})
+
+presentation.df_to_table(df=df, page_id=page_id)
+
+
+n_rows=len(df.index)
+n_cols=len(df.columns)
+
+[1, 2, 3] + [4, 5, 6]
+
+
+
+
+
+requests = list()
+for row in range(n_rows):
+    for col in range(n_cols):
+        cell = df.iloc[row, col]
+        requests.append({"insertText": {"objectId": tbl_id,
+                                        "cellLocation": {
+                                            "rowIndex": row,
+                                            "columnIndex": col},
+                                        "text": cell,
+                                        "insertionIndex": 0}})  
+
+# dict_keys(['objectId', 'pageType', 'pageElements', 'pageProperties', 'masterProperties'])
+fonts = list()
+page_elements = presentation._GoogleSlides__presentation_info.get('masters')[0].get('pageElements')
+for element in page_elements:
+    text = element.get('shape').get('text')
+    if text is not None:
+        for text_element in text.get('textElements'):
+            text_run = text_element.get('textRun')
+            if text_run is not None:
+                fonts.append(text_run.get('style').get('fontFamily'))
+fonts = list(set(fonts)) # To get unique values
+      
+                
+[0].get('shape').get('text').get('textElements')[1]
+text_element.get('textRun').get('style').get('fontFamily')
+
+get('paragraphMarker').get('style')
+get('lists')
+        
+
+
+
+
+
+
+
+
+

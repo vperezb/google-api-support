@@ -20,20 +20,20 @@ class GoogleSheets(GoogleDriveFile):
         spreadsheet_info = self.services.get('sheets').spreadsheets().get(spreadsheetId=file_id, fields='*').execute()
         
         # TODO: Update python version to >= 3.9 and do z = x | y
-        self._info = {**self._info, **spreadsheet_info}
+        self.__file_info = {**self.__file_info, **spreadsheet_info}
  
     # Additional properties with respect to GoogleDriveFile
     @property
     def locale(self):
-        return self._info.get('properties').get('locale')
+        return self.__file_info.get('properties').get('locale')
     
     @property
     def timezone(self):
-        return self._info.get('properties').get('timezone')
+        return self.__file_info.get('properties').get('timezone')
     
     @property
     def sheets(self):
-        return {sheet.get('properties').get('sheetId'):{key:value for key, value in sheet.get('properties').items() if key != 'sheetId'} for sheet in self._info.get('sheets')}
+        return {sheet.get('properties').get('sheetId'):{key:value for key, value in sheet.get('properties').items() if key != 'sheetId'} for sheet in self.__file_info.get('sheets')}
     
     @property
     def sheets_ids(self):

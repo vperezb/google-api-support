@@ -40,32 +40,32 @@ class GoogleDriveFile:
     def __init__(self, file_id=None):
         if file_id is not None: 
             # File information 
-            self._info = self.service.files().get(fileId=file_id, fields='*').execute()
+            self.__file_info = self.service.files().get(fileId=file_id, fields='*').execute()
 
     # Properties
     @property
     def file_id(self):
-        return self._info.get('id')
+        return self.__file_info.get('id')
 
     @property
     def file_name(self):
-        return self._info.get('name')
+        return self.__file_info.get('name')
 
     @property
     def mime_type(self):
-        return self._info.get('mimeType')
+        return self.__file_info.get('mimeType')
 
     @property
     def url(self):
-        return self._info.get('webViewLink')
+        return self.__file_info.get('webViewLink')
     
     @property
     def parent_folder_id(self):
-        return self._info.get('parents')[0] if self._info.get('parents') is not None else None
+        return self.__file_info.get('parents')[0] if self.__file_info.get('parents') is not None else None
         
     @property
     def permissions(self):
-        return self._info.get('permissions')
+        return self.__file_info.get('permissions')
             
     @classmethod
     def create(cls, file_name, mime_type, parent_folder_id=None, transfer_permissions=False, **kwargs):
@@ -110,7 +110,7 @@ class GoogleDriveFile:
         old_file_name = self.file_name
         try:
             response = self.service.files().update(fileId=self.file_id, body={'name':new_file_name}, fields='*').execute()
-            self._info = response
+            self.__file_info = response
             print('File name changed from "{old}" to "{new}".'.format(old=old_file_name, new=new_file_name))
         except errors.HttpError as error:
             print('An error occurred: %s' % error)
@@ -294,7 +294,7 @@ class GoogleDriveFile:
                                                    supportsAllDrives=True,
                                                 #    fields='id, parents').execute()
                                                     fields='*').execute()
-            self._info = response
+            self.__file_info = response
             # self.parent_folder_id = response.get('parents')[0]
             print("File moved")
         except errors.HttpError as error:
@@ -307,7 +307,7 @@ class GoogleDriveFile:
             id = self.file_id
             name = self.file_name
             self.service.files().delete(fileId=self.file_id).execute()
-            self._info = 'File does not exist.'
+            self.__file_info = 'File does not exist.'
         except errors.HttpError as error:
             print('An error occurred: %s' % error)
         print(f"Deleted file: {id} - {name}")
