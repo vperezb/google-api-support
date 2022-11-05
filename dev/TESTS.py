@@ -134,15 +134,62 @@ header=True
 color='DARK1'
 
 from dev.slide_table import Table
+from dev import utils
 
 fill_request = Table(slides_file=presentation, table_id='SLIDES_API1459332045_0').fill_header()
 text_request = Table(slides_file=presentation, table_id='SLIDES_API1459332045_0').color_text_header()
+
+presentation.execute_batch_update(text_request)
 
 df = pd.DataFrame({'var1': [1, 2, 3],
                    'var2': [4, 5, 6],
                    'var3': [7, 8 , 9]})
 
-presentation.df_to_table(df=df, page_id=page_id)
+presentation.df_to_table(df=df, page_id=page_id, text_color={'red':1, 'green':1, 'blue': 1}, fill_color={'red':0, 'green':0, 'blue': 0})
+
+table_id='SLIDES_API414104160_0'
+df = pd.DataFrame(np.vstack([df.columns, df]))
+n_rows = len(df.index)
+n_cols = len(df.columns)
+
+
+requests = list()
+for row in range(n_rows):
+    for col in range(n_cols):
+        cell = df.iloc[row, col]
+        requests.append({"insertText": {"objectId": table_id,
+                                        "cellLocation": {
+                                            "rowIndex": row,
+                                            "columnIndex": col},
+                                        "text": str(cell),
+                                        "insertionIndex": 0}})  
+        
+table = Table(slides_file=presentation, table_id=table_id)        
+
+# Fill cells
+if header == True:
+    requests.append(table.fill_header(header_rows=header_rows, header_cols=header_cols, fill_color=header_fill_color))
+    row_index = header_rows
+    col_index = header_cols
+    row_span = table.n_rows - header_rows
+    col_span = table.n_cols - header_cols
+else:
+    row_index = 0
+    col_index = 0
+    row_span = table.n_rows
+    col_span = table.n_cols
+if isinstance(fill_color, dict):
+    fill=utils.get_rgb_color(color_dict=fill_color)
+elif isinstance(fill_color, str):
+    fill=utils.validate_color(slides_file=self, color_type=fill_color)
+requests.append(table.fill_cells(row_span=row_span, col_span=col_span, 
+                                    rgb_color=fill, 
+                                    row_index=row_index, col_index=col_index))
+
+
+
+
+
 
 header_rows=1
 header_cols=1
@@ -154,44 +201,13 @@ from dev.utils import validate_color
 rgb_color = validate_color(presentation, text_color)
 text_font='Arial'
 
-requests = list()
-for row in range(header_rows):
-    for col in range(n_cols):
-        requests.append({"updateTextStyle": {"objectId": table_id,
-                                                "cellLocation": {
-                                                    "rowIndex": row,
-                                                    "columnIndex": col},
-                                                "style": {
-                                                    "foregroundColor": {
-                                                        "opaqueColor": {
-                                                            "rgbColor": rgb_color}},
-                                                    "bold": text_bold,
-                                                    "fontFamily": text_font,
-                                                    "fontSize": {
-                                                        "magnitude": text_size,
-                                                        "unit": "PT"}},
-                                                "textRange": {
-                                                    "type": "ALL"},
-                                                "fields": "foregroundColor,bold,fontFamily,fontSize"}}
-        )
-for col in range(header_cols):
-    for row in range(n_rows):
-        requests.append({"updateTextStyle": {"objectId": table_id,
-                                                "cellLocation": {
-                                                    "rowIndex": row,
-                                                    "columnIndex": col},
-                                                "style": {
-                                                    "foregroundColor": {
-                                                        "opaqueColor": {
-                                                            "rgbColor": rgb_color}},
-                                                    "bold": text_bold,
-                                                    "fontFamily": text_font,
-                                                    "fontSize": {
-                                                        "magnitude": text_size,
-                                                        "unit": "PT"}},
-                                                "textRange": {
-                                                    "type": "ALL"},
-                                                "fields": "foregroundColor,bold,fontFamily,fontSize"}}
-        )
-        
-presentation.execute_batch_update(requests)
+from itertools import product
+
+header_rows=1
+header_cols=1
+
+result = list()
+cell_indexes = list(product(list(range(n_rows)), list(range(n_cols))))
+for cell in cell_indexes:
+    cell_type = True if cell[0] < header_rows or cell[1] < header_cols else False
+    result.append(cell_type)

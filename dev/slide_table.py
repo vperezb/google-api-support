@@ -20,10 +20,10 @@ class Table:
                         "columns": n_cols}}]
         return requests
     
-    def fill_cells(self, row_span, col_span, rgb_color):
+    def fill_cells(self, row_span, col_span, rgb_color, row_index=0, col_index=0):
         requests = [{"updateTableCellProperties": {"objectId": self.table_id,
-                                            "tableRange": {"location": {"rowIndex": 0,
-                                                                        "columnIndex": 0},
+                                            "tableRange": {"location": {"rowIndex": row_index,
+                                                                        "columnIndex": col_index},
                                                     "rowSpan": row_span,
                                                     "columnSpan": col_span}, 
                                         "tableCellProperties": {"tableCellBackgroundFill": {"solidFill": 
@@ -31,7 +31,7 @@ class Table:
                                         "fields": "tableCellBackgroundFill.solidFill.color"}}]
         return requests
     
-    def color_text_cell(self, row, col, rgb_color, bold=True, font='', size=18):
+    def color_text_cell(self, row, col, rgb_color, bold=True, font='', size=14):
         # https://developers.google.com/slides/api/reference/rest/v1/presentations.pages/text
         # The font family can be any font from the Font menu in Slides or from Google Fonts . If the font name is unrecognized, the text is rendered in Arial . 
         if font == '':
@@ -57,12 +57,10 @@ class Table:
                                                          "type": "ALL"},
                                                      "fields": "foregroundColor,bold,fontFamily,fontSize"}}]    
         return requests    
-        
+            
     def fill_header(self, header_rows=1, header_cols=0, fill_color='DARK1'):
         if isinstance(fill_color, dict):
-            assert all([fill_color.get('red') is None, fill_color.get('green') is None, fill_color.get('blue') is None]), 'At least one of red, green, blue needs to be provided in the dictionary.'
-            rgb_color = {key:float(value) for key, value in fill_color.items() if key in ['red', 'green', 'blue'] and not (value is None or isnan(value))}
-            
+            rgb_color = utils.get_rgb_color(color_dict=fill_color)
         elif isinstance(fill_color, str):
             rgb_color = utils.validate_color(slides_file=self.file, color_type=fill_color)
         else:
@@ -77,7 +75,7 @@ class Table:
     
     def color_text_header(self, header_rows=1, header_cols=0, 
                           text_color='LIGHT1', text_bold=True,
-                          text_font='', text_size=18):
+                          text_font='', text_size=14):
         
         if isinstance(text_color, dict):
             assert all([text_color.get('red') is None, text_color.get('green') is None, text_color.get('blue') is None]), 'At least one of red, green, blue needs to be provided in the dictionary.'

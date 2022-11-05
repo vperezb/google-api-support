@@ -129,6 +129,11 @@ def google_export_types():
 def page_element_kinds():
     return ['elementGroup', 'shape', 'image', 'video', 'line', 'table', 'wordArt', 'sheetsChart']
 
+def get_rgb_color(color_dict):
+    assert not all([color_dict.get('red') is None, color_dict.get('green') is None, color_dict.get('blue') is None]), 'At least one of red, green, blue needs to be provided in the dictionary.'
+    rgb_color = {key:float(value) for key, value in color_dict.items() if key in ['red', 'green', 'blue'] and not (value is None or isnan(value))}
+    return rgb_color
+
 def validate_color(slides_file, color_type):
     """Check if color type is inside the file master colors.
 

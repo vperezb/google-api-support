@@ -2,7 +2,7 @@
 import pandas as pd
 import numpy as np
 import re
-from itertools import chain
+from itertools import chain, product
 from apiclient import errors
 from warnings import warn
 from dev.drive import GoogleDriveFile
@@ -543,9 +543,11 @@ class GoogleSlides(GoogleDriveFile):
         print('Created table in page {page} with ID {table}.'.format(page=page_id, table=table_id))
         return table_id   
             
-    def df_to_table(self, df, page_id, header=True,
-                    header_rows=1, header_cols=0, fill_color='DARK1',
-                    text_color='LIGHT1', text_bold=True, text_font='', text_size=18):
+    def df_to_table(self, df, page_id, 
+                    fill_color={'red':1, 'green':1, 'blue': 1}, text_color={'red':0, 'green':0, 'blue': 0},
+                    text_bold=False, text_font='Arial', text_size=12,
+                    header=True, header_rows=1, header_cols=0, header_fill_color='DARK1',
+                    header_text_color='LIGHT1', header_text_bold=True, header_text_font='', header_text_size=14):
         
         assert isinstance(df, pd.DataFrame), 'df must be a pandas DataFrame.'
         if page_id not in self.slides_ids:
@@ -570,14 +572,61 @@ class GoogleSlides(GoogleDriveFile):
                                                     "columnIndex": col},
                                                 "text": str(cell),
                                                 "insertionIndex": 0}})  
+                
+        table = Table(slides_file=self, table_id=table_id)        
         
-        # Add header
+        # Fill cells
         if header == True:
-            table = Table(slides_file=self, table_id=table_id)
-            requests.append(table.fill_header(header_rows=header_rows, header_cols=header_cols, fill_color=fill_color))
-            requests.append(table.color_text_header(header_rows=header_rows, header_cols=header_cols,
-                                                   text_color=text_color, text_bold=text_bold,
-                                                   text_font=text_font, text_size=text_size))
+            requests.append(table.fill_header(header_rows=header_rows, header_cols=header_cols, fill_color=header_fill_color))
+            row_index = header_rows
+            col_index = header_cols
+            row_span = table.n_rows - header_rows
+            col_span = table.n_cols - header_cols
+        else:
+            row_index = 0
+            col_index = 0
+            row_span = table.n_rows
+            col_span = table.n_cols
+        if isinstance(fill_color, dict):
+            fill=utils.get_rgb_color(color_dict=fill_color)
+        elif isinstance(fill_color, str):
+            fill=utils.validate_color(slides_file=self, color_type=fill_color)
+        requests.append(table.fill_cells(row_span=row_span, col_span=col_span, 
+                                         rgb_color=fill, 
+                                         row_index=row_index, col_index=col_index))
+        
+        # Format cells' text
+        cell_indexes = list(product(list(range(n_rows)), list(range(n_cols))))
+        for row, col in cell_indexes:
+            # cell_type = True if cell[0] < header_rows or cell[1] < header_cols else False
+            if header == True and (row < header_rows or col < header_cols):
+                if isinstance(header_text_color, dict):
+                    color=utils.get_rgb_color(color_dict=header_text_color)
+                elif isinstance(header_text_color, str):
+                    color=utils.validate_color(slides_file=self, color_type=header_text_color)
+                bold=header_text_bold
+                font=header_text_font
+                size=header_text_size
+            else:
+                if isinstance(text_color, dict):
+                    color=utils.get_rgb_color(color_dict=text_color)
+                elif isinstance(text_color, str):
+                    color=utils.validate_color(slides_file=self, color_type=text_color)
+                bold=text_bold
+                font=text_font
+                size=text_size
+            requests.append(table.color_text_cell(row=row, col=col, 
+                                                  rgb_color=color, 
+                                                  bold=bold, 
+                                                  font=font, 
+                                                  size=size))
+        
+        # # Add header
+        # if header == True:
+        #     requests.append(table.fill_header(header_rows=header_rows, header_cols=header_cols, fill_color=header_fill_color))
+        #     requests.append(table.color_text_header(header_rows=header_rows, header_cols=header_cols,
+        #                                            text_color=header_text_color, text_bold=header_text_bold,
+        #                                            text_font=header_text_font, text_size=header_text_size))
 
         self.execute_batch_update(requests)
 
