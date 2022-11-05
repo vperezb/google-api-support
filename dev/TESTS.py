@@ -127,13 +127,16 @@ presentation = slides.GoogleSlides(file_id='1lg-skFt676nQdQ0tUbb_3y4F8_82-hKacEj
 
 
 # Add table
-page_id='SLIDES_API1912518732_0'
+page_id='SLIDES_API1209340472_0'
 n_rows=3
 n_cols=11
 header=True
 color='DARK1'
 
+from dev.slide_table import Table
 
+fill_request = Table(slides_file=presentation, table_id='SLIDES_API1459332045_0').fill_header()
+text_request = Table(slides_file=presentation, table_id='SLIDES_API1459332045_0').color_text_header()
 
 df = pd.DataFrame({'var1': [1, 2, 3],
                    'var2': [4, 5, 6],
@@ -141,52 +144,54 @@ df = pd.DataFrame({'var1': [1, 2, 3],
 
 presentation.df_to_table(df=df, page_id=page_id)
 
+header_rows=1
+header_cols=1
 
-n_rows=len(df.index)
-n_cols=len(df.columns)
+n_rows=4
+n_cols=3
 
-[1, 2, 3] + [4, 5, 6]
-
-
-
-
+from dev.utils import validate_color
+rgb_color = validate_color(presentation, text_color)
+text_font='Arial'
 
 requests = list()
-for row in range(n_rows):
+for row in range(header_rows):
     for col in range(n_cols):
-        cell = df.iloc[row, col]
-        requests.append({"insertText": {"objectId": tbl_id,
-                                        "cellLocation": {
-                                            "rowIndex": row,
-                                            "columnIndex": col},
-                                        "text": cell,
-                                        "insertionIndex": 0}})  
-
-# dict_keys(['objectId', 'pageType', 'pageElements', 'pageProperties', 'masterProperties'])
-fonts = list()
-page_elements = presentation._GoogleSlides__presentation_info.get('masters')[0].get('pageElements')
-for element in page_elements:
-    text = element.get('shape').get('text')
-    if text is not None:
-        for text_element in text.get('textElements'):
-            text_run = text_element.get('textRun')
-            if text_run is not None:
-                fonts.append(text_run.get('style').get('fontFamily'))
-fonts = list(set(fonts)) # To get unique values
-      
-                
-[0].get('shape').get('text').get('textElements')[1]
-text_element.get('textRun').get('style').get('fontFamily')
-
-get('paragraphMarker').get('style')
-get('lists')
+        requests.append({"updateTextStyle": {"objectId": table_id,
+                                                "cellLocation": {
+                                                    "rowIndex": row,
+                                                    "columnIndex": col},
+                                                "style": {
+                                                    "foregroundColor": {
+                                                        "opaqueColor": {
+                                                            "rgbColor": rgb_color}},
+                                                    "bold": text_bold,
+                                                    "fontFamily": text_font,
+                                                    "fontSize": {
+                                                        "magnitude": text_size,
+                                                        "unit": "PT"}},
+                                                "textRange": {
+                                                    "type": "ALL"},
+                                                "fields": "foregroundColor,bold,fontFamily,fontSize"}}
+        )
+for col in range(header_cols):
+    for row in range(n_rows):
+        requests.append({"updateTextStyle": {"objectId": table_id,
+                                                "cellLocation": {
+                                                    "rowIndex": row,
+                                                    "columnIndex": col},
+                                                "style": {
+                                                    "foregroundColor": {
+                                                        "opaqueColor": {
+                                                            "rgbColor": rgb_color}},
+                                                    "bold": text_bold,
+                                                    "fontFamily": text_font,
+                                                    "fontSize": {
+                                                        "magnitude": text_size,
+                                                        "unit": "PT"}},
+                                                "textRange": {
+                                                    "type": "ALL"},
+                                                "fields": "foregroundColor,bold,fontFamily,fontSize"}}
+        )
         
-
-
-
-
-
-
-
-
-
+presentation.execute_batch_update(requests)

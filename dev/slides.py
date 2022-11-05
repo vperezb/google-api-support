@@ -545,7 +545,7 @@ class GoogleSlides(GoogleDriveFile):
             
     def df_to_table(self, df, page_id, header=True,
                     header_rows=1, header_cols=0, fill_color='DARK1',
-                    text_color='LIGHT1', text_bold=True, text_font='', text_size=14):
+                    text_color='LIGHT1', text_bold=True, text_font='', text_size=18):
         
         assert isinstance(df, pd.DataFrame), 'df must be a pandas DataFrame.'
         if page_id not in self.slides_ids:
