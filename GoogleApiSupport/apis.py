@@ -22,3 +22,6 @@ api_configs = {
 @functools.lru_cache()
 def get_api_config(api_name):
     return api_configs[api_name]
+
+def all_scopes():
+    return [ data['scope'] for __placeholder, data in api_configs.items() ]
