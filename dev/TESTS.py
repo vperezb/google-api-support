@@ -27,8 +27,8 @@ file_with_id = drive.GoogleDriveFile(file_id=file_id)
 vars(file_with_id)
 
 # Creating new file with copied permissions
-file_created = drive.GoogleDriveFile.create(file_name='Class Test', 
-                                            mime_type='application/vnd.google-apps.document', 
+file_created = drive.GoogleDriveFile.create(file_name='New spreadsheet', 
+                                            mime_type='application/vnd.google-apps.spreadsheet', 
                                             parent_folder_id='1SNyrByFiT--CqHW3s0IWHGmXN7G_2o7H', 
                                             transfer_permissions=True)
 
@@ -116,7 +116,7 @@ new_spreadsheet = sheets.GoogleSheets.create(file_name='It works',
                                              parent_folder_id='1SNyrByFiT--CqHW3s0IWHGmXN7G_2o7H',
                                              transfer_permissions=True)
 
-from GoogleApiSupport import slides
+from GoogleApiSupport import auth
 
 shapes = slides.get_all_shapes_placeholders(presentation_id='1lg-skFt676nQdQ0tUbb_3y4F8_82-hKacEj23unuxdk')
 
@@ -154,3 +154,35 @@ presentation.format_table(table_id, page_id, requests=False, text=False,
                     text_bold=False, text_font='Arial', text_size=12,
                     header=True, header_rows=1, header_cols=0, header_fill_color='DARK1',
                     header_text_color='LIGHT1', header_text_bold=True, header_text_font='', header_text_size=14)
+
+url='https://upload.wikimedia.org/wikipedia/commons/4/41/Sunflower_from_Silesia2.jpg'
+object_id = None
+transform=None
+size=None
+
+requests = [
+    {
+        'createImage': {
+            'objectId': object_id,
+            'url': url,
+            'elementProperties': {
+                'pageObjectId': page_id,
+                'transform': transform,
+                'size': size
+            },
+        }
+    },
+]
+
+response = presentation.execute_batch_update(requests)
+
+response.get('replies')[0].get('createImage').get('objectId')
+
+help(presentation)
+
+result = presentation.find_element(element_id='SLIDES_API1025621154_0')
+
+response = presentation.duplicate_object(page_id)
+response.keys()
+
+list(result.keys())[0]

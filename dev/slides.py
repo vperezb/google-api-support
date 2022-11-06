@@ -5,9 +5,9 @@ import re
 from itertools import chain, product
 from apiclient import errors
 import warnings
-from drive import GoogleDriveFile
-import utils
-from slide_table import Table
+from dev.drive import GoogleDriveFile
+from dev import utils
+from dev.slide_table import Table
 from GoogleApiSupport import auth, apis
 
 warnings.filterwarnings("error")

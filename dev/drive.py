@@ -1,5 +1,6 @@
+# from GoogleApiSupport import auth
 from GoogleApiSupport import auth
-import utils
+from dev import utils
 from apiclient import errors
 import mimetypes
 import io
@@ -198,7 +199,7 @@ class GoogleDriveFile:
             print(f"File downloaded under {destination_path}") 
            
     def export(self, destination_folder='', file_name=None, mime_type=None, extension=None, open_file=False):
-        """Method to export the file if it's a Google Worspace file, i.e. Google Docs, Sheets, and Slides.
+        """Method to export the file if it's a Google Workspace file, i.e. Google Docs, Sheets, and Slides.
         Reflects the second use case described here: https://developers.google.com/drive/api/guides/manage-downloads
         The order of presedence to check if values are allowed: file_name, mime_type, extension.
 

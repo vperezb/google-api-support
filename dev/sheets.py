@@ -1,7 +1,7 @@
 import re, webbrowser
 import pandas as pd
 from apiclient import errors
-from drive import GoogleDriveFile
+from dev.drive import GoogleDriveFile
 from GoogleApiSupport import auth, apis
 
 class GoogleSheets(GoogleDriveFile):
