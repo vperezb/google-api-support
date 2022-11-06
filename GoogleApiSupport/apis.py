@@ -15,6 +15,11 @@ api_configs = {
         "scope": "https://www.googleapis.com/auth/spreadsheets",
         "build": "sheets",
         "version": "v4"
+    },
+    "docs": {
+        "scope": "https://www.googleapis.com/auth/documents",
+        "build": "docs",
+        "version": "v1"
     }
 }
 
