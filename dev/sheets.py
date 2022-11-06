@@ -22,9 +22,6 @@ class GoogleSheets(GoogleDriveFile):
         
         # Additional spreadsheet specific info
         self.__spreadsheet_info = self.services.get('sheets').spreadsheets().get(spreadsheetId=file_id, fields='*').execute()
-        
-        # TODO: Update python version to >= 3.9 and do z = x | y
-        # self.__file_info = {**self.__file_info, **spreadsheet_info}
  
     # Additional properties with respect to GoogleDriveFile
     @property
