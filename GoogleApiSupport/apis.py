@@ -20,6 +20,26 @@ api_configs = {
         "scope": "https://www.googleapis.com/auth/documents",
         "build": "docs",
         "version": "v1"
+    },
+    "tasks": {
+        "scope": "https://www.googleapis.com/auth/tasks",
+        "build": "tasks",
+        "version": "v1"
+    },
+    "forms": {
+        "scope": "https://www.googleapis.com/auth/forms",
+        "build": "forms",
+        "version": "v1"
+    },
+    "gmail": {
+        "scope": "https://www.googleapis.com/auth/gmail",
+        "build": "gmail",
+        "version": "v1"
+    },
+    "calendar": {
+        "scope": "https://www.googleapis.com/auth/calendar",
+        "build": "calendar",
+        "version": "v3"
     }
 }
 
