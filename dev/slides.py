@@ -5,14 +5,18 @@ import re
 from itertools import chain, product
 from apiclient import errors
 import warnings
-from dev.drive import GoogleDriveFile
-from dev import utils
-from dev.slide_table import Table
+from drive import GoogleDriveFile
+import utils
+from slide_table import Table
 from GoogleApiSupport import auth, apis
 
 warnings.filterwarnings("error")
 
 class GoogleSlides(GoogleDriveFile):
+    """A Google Slides file.
+
+    This class enherits attributes, properties and methods from GoogleDriveFile and expands with presentation-only capabilities.
+    """
     
     services = {api_name: auth.get_service(api_name) for api_name in apis.api_configs}
     
@@ -24,7 +28,7 @@ class GoogleSlides(GoogleDriveFile):
     def __init__(self, file_id=None):
         super().__init__(file_id=file_id)
         
-        # Additional spreadsheet specific info
+        # Additional presentation specific info
         self.__presentation_info = self.services.get('slides').presentations().get(presentationId=file_id, fields='*').execute()
         
         # TODO: Update python version to >= 3.9 and do z = x | y
@@ -121,22 +125,68 @@ class GoogleSlides(GoogleDriveFile):
         
     @classmethod
     def create(cls, file_name, parent_folder_id=None, transfer_permissions=False, **kwargs):
-        new_file = super().create(file_name=file_name, 
+        """Class method to create a Google Slides file.
+
+        Args:
+            file_name (str): Name of new file.
+            parent_folder_id (str, optional): ID of parent folder. Defaults to None.
+            transfer_permissions (bool, optional): Whether to copy permissions from parent folder. Defaults to False.
+            
+        Returns:
+            GoogleSlides object.
+        """
+        new_file = super().create(file_name=file_name,
                                   mime_type='application/vnd.google-apps.presentation',
-                                  parent_folder_id=parent_folder_id, 
+                                  parent_folder_id=parent_folder_id,
                                   transfer_permissions=transfer_permissions, 
                                   **kwargs)
         return new_file
     
     def execute_batch_update(self, requests):
+        """Applies one or more updates to the presentation.
+        Implementation of: https://developers.google.com/slides/api/reference/rest/v1/presentations/batchUpdate.
+        Beside updating the presentation, it also updates the __presentation_info attribute.
+
+        Args:
+            requests (list): List of update requests.
+
+        Returns:
+            dict: Response to the update requests.
+        """
+        
         body = {'requests': requests}
         response = self.services.get('slides').presentations().batchUpdate(presentationId=self.file_id,
                                                                         body=body).execute()
         # Update presentation info
         self.__presentation_info = self.services.get('slides').presentations().get(presentationId=self.file_id, fields='*').execute()
         return response
+    
+    def batch_delete_text(self, elements_ids):
+        """Delete text inside of objects.
+
+        Args:
+            elements_ids (list): List of IDs of elements from which to delete the text.
+        """
+        
+        ids = ', '.join(elements_ids)
+        requests = list()
+        for id in elements_ids:
+            requests.append({'deleteText': {'objectId': id}})
+        try: 
+            self.execute_batch_update(requests)
+            if len(elements_ids) == 1:
+                print('Text in object with ID "{}" deleted.'.format(ids))
+            else:
+                print('Text in objects with IDs "{}" deleted.'.format(ids))
+        except errors.HttpError as error:
+            print('An error occurred: %s' % error)
 
     def delete_slides_notes(self, slides_ids=[]):
+        """Delete notes from slides.
+
+        Args:
+            slides_ids (list, optional): List of slides IDs from where to delete notes. Defaults to [] (i.e. all).
+        """
         if slides_ids==[]:
             slides_ids = self.slides_ids
             
@@ -148,6 +198,19 @@ class GoogleSlides(GoogleDriveFile):
         self.batch_delete_text(objects_ids=objects)
     
     def add_slide(self, layout='TITLE_AND_BODY', index=-1):
+        """Add slide to presentation.
+
+        Args:
+            layout (str, optional): Name or display name of layout. Defaults to 'TITLE_AND_BODY'.
+            index (int, optional): Index where to add new slide. Defaults to -1 (i.e. end of presentation).
+
+        Raises:
+            ValueError: If the given layout is not included in the property layout types.
+        
+        Returns:
+            str: ID of the new slide.
+        """
+        
         layouts = self.layout_types
         
         if len(layouts.index) == 0:
@@ -158,7 +221,7 @@ class GoogleSlides(GoogleDriveFile):
         elif layout in layouts['name'].to_list():
             layout_type = layout
         else:
-            raise ValueError('The layout must be one of those from the attribute layout types.')
+            raise ValueError('The layout must be one of those from the property layout types.')
         
         if index < 0:
             number = len(self.slides) + index + 1
@@ -168,13 +231,20 @@ class GoogleSlides(GoogleDriveFile):
         requests = [{"createSlide": {"insertionIndex": number,
                                      "slideLayoutReference": {"predefinedLayout": layout_type}}}]
         try:
-            # QQ: return ID of new slide?
-            self.execute_batch_update(requests=requests)
+            response = self.execute_batch_update(requests=requests)
             print('Added slide at index {}'.format(number))
         except errors.HttpError as error:
             print('An error occurred: %s' % error)
             
+        return response.get('replies')[0].get('createSlide').get('objectId')
+            
     def move_slide(self, slide_id, new_index=-1):
+        """Move slide to new position in the presentation.
+
+        Args:
+            slide_id (str): ID of the slide to move.
+            new_index (int, optional): Index where to move the slide. Defaults to -1 (i.e. end of presentation).
+        """
         
         if new_index < 0:
             number = len(self.slides) + new_index + 1
@@ -185,23 +255,81 @@ class GoogleSlides(GoogleDriveFile):
                                               "insertionIndex": number,},},]
         # body = {'requests': requests}
         try:
-            # response = services.get('slides').presentations().batchUpdate(presentationId=self.file_id,
-            #                                                               body=body).execute()
             self.execute_batch_update(requests=requests)
-            # slides_info = self.services.get('slides').spreadsheets().get(spreadsheetId=self.file_id, fields='slides').execute()
-            # self.slides = {slide.get('objectId'):{key:value for key, value in slide.items() if key != 'objectId'} for slide in slides_info.get('slides')}
             print('Slide {id} moved to index {index}'.format(id=slide_id, index=number))
         except errors.HttpError as error:
             print('An error occurred: %s' % error)
 
-    def text_replace(self, placeholder_text, value, pages_ids=None):
+    def table_to_df(self, page_id='', table_id='', column_names=True):
+        """Extract text from a table into a pandas DataFrame.
+        
+        At least one of page_id or table_id needs to be different than ''.
 
-        if pages_ids is None:
-            pages_ids = list()
+        Args:
+            page_id (str, optional): ID of the page where the table is located. Defaults to ''.
+            table_id (str, optional): ID of the table. Defaults to ''.
+            column_names (bool, optional): Whether the first row should be considered as the table column names. Defaults to True.
+
+        Raises:
+            ValueError: If the given page does not have tables in it.
+            ValueError: If both page_id and table_id are ''.
+
+        Returns:
+            pandas.DataFrame: Text from table.
+        """
+        
+        if table_id != '' and page_id == '':
+            info = self.find_element(element_id=table_id, element_kinds=['table'])
+            page_id = list(info.keys())[0]
+        elif table_id == '' and page_id != '':
+            tables = self.get_elements_ids(element_kinds=['table'], pages_ids=[page_id])
+            tables_ids = list(next(iter(tables.values())).keys())
+                # If there is only one table in the page, you can leave ID empty, otherwise you need to to indicate it to correctly identify the table
+            if len(tables_ids) == 0:
+                raise ValueError('The indicated page does not have tables in it.')
+            elif len(tables_ids) > 1:
+                warnings.warn('The indicated page has more than one table, the first one will be taken.')
+            table_id = tables_ids[0]
+        elif table_id == '' and page_id == '':
+            raise ValueError('At least one of page_id or table_id needs to be given.')
+            
+        # Get rows of the table
+        table = [object for object in self.slides.get(page_id).get('pageElements') if object.get('objectId') == table_id][0]
+        table_rows = table.get('table').get('tableRows')
+
+        # Go through every row and its cells to extract text
+        table_text = list()
+        for row in table_rows:
+            row_text = list()
+            for cell in row.get('tableCells'):
+                cell_text = cell.get('text').get('textElements')[1].get('textRun').get('content')
+                cell_text = re.search('\{\{([^)]+)\}\}', cell_text).group(1)
+                row_text.append(cell_text)
+            table_text.append(row_text)
+
+        # Transform nested list into pandas DataFrame
+        if column_names == True:
+            columns = table_text[0]
+            data = table_text[1:]
+            table_df = pd.DataFrame(data, columns=columns)
+        elif column_names == False:
+            table_df = pd.DataFrame(table_text)
+            
+        return table_df
+
+    def text_replace(self, placeholder_text, value, pages_ids=[]):
+        """Replace a text placeholder with a new value.
+        Placeholders are constructed as {{placeholder_text}}, thus here only write the text inside the parenthesis.
+
+        Args:
+            placeholder_text (str): Placeholder text to replace.
+            value (str): New value to replace placeholder with.
+            pages_ids (list, optional): List of page IDs where to perform replacement. Defaults to [] (i.e. all).
+        """
             
         assert isinstance(value, str), Exception('The value {} is not a string'.format(value))
         requests = [{"replaceAllText": {"containsText": {"text": '{{' + placeholder_text + '}}'},
-                                        "replaceText": value,
+                                        "replaceText": str(value),
                                         "pageObjectIds": pages_ids}}]
         try: 
             self.execute_batch_update(requests)
@@ -211,11 +339,12 @@ class GoogleSlides(GoogleDriveFile):
 
     def batch_text_replace(self, text_mapping, pages_ids=[]):
         """Replaces text placeholders.
-        This needs to be written as {{placeholder_text}}.
+        Placeholders are constructed as {{placeholder_text}}, thus here only write the text inside the parenthesis.
+        Text mapping needs to be constructed as {placeholder_text:value}.
 
         Args:
             text_mapping (dict): Keys are the placeholders to replace, values the new values to impute (both must be strings).
-            pages_ids (list, optional): List ofIDs of the pages. Defaults to empty list (i.e. all)
+            pages_ids (list, optional): List of page IDs where to perform replacement. Defaults to [] (i.e. all).
 
         Raises:
             Exception: If text from a key is not a string.
@@ -223,47 +352,25 @@ class GoogleSlides(GoogleDriveFile):
         
         requests = list()
         for placeholder_text, new_value in text_mapping.items():
-            if isinstance(new_value, str):
-                requests += [{"replaceAllText": {"containsText": {"text": '{{' + placeholder_text + '}}'},
-                                                    "replaceText": new_value,
-                                                    "pageObjectIds": pages_ids}}]
-            else:
-                raise Exception('The value from key {} is not a string'.format(placeholder_text))
+            requests.append({"replaceAllText": {"containsText": {"text": '{{' + placeholder_text + '}}'},
+                                                "replaceText": str(new_value),
+                                                "pageObjectIds": pages_ids}})
         try: 
             self.execute_batch_update(requests)
             print('Batch text replacement successful.')
         except errors.HttpError as error:
             print('An error occurred: %s' % error)
-        
-    # def df_text_replace(self, df, sep='_', pages_ids=[]):
-    #     """Replaces text placeholders with data from a pandas DataFrame.
-    #     This is meant to be used for replace placeholders in a table with data from a dataframe of the same size.
-    #     The placeholder text needs to written as {{df_column_name+sep+df_index}}.
-
-    #     Args:
-    #         df (pandas.DataFrame): Pandas DataFrame with the values to raplace with.
-    #         sep (str, optional): Separator for DataFrame column name and index in the placeholder text. Defaults to '_'.
-    #         pages_ids (list, optional): List ofIDs of the pages. Defaults to empty list (i.e. all)
-    #     """
-        
-    #     # Creating the mapping of text name and value from dataframe
-    #     nested_dict = df.to_dict()
-    #     list_of_dict = pd.json_normalize(nested_dict, sep=sep).to_dict('records')
-    #     df_mapping = list_of_dict[0]    
-        
-    #     # Apply text replace to the created mapping
-    #     self.batch_text_replace(text_mapping=df_mapping, pages_ids=pages_ids) 
     
-    def df_text_replace(self, df, page_id, table_id='', column_names=True):
+    def df_text_replace(self, df, page_id='', table_id='', column_names=True):
         """Replaces text placeholders with data from a pandas DataFrame.
-        This is meant to be used for replace placeholders in a table with data from a dataframe of the same size.
-        The placeholder text needs to written as {{df_column_name+sep+df_index}}.
+        
+        At least one of page_id or table_id needs to be different than ''.
 
         Args:
-            df (pandas.DataFrame): Pandas DataFrame with the values to raplace with.
-            sep (str, optional): Separator for DataFrame column name and index in the placeholder text. Defaults to '_'.
-            page_id (str): ID of the page where the table is.
-            table_id (str, optional): ID of the table. Defaults to '', which works only if there is just one table in the page.
+            df (pandas.DataFrame): DataFrame with the values to raplace with.
+            page_id (str, optional): ID of the page where the table is. Defaults to ''.
+            table_id (str, optional): ID of the table. Defaults to ''.
+            column_names (bool, optional): Whether column names also have placeholders to replace. Defaults to True.
         """
         
         # Get dataframe with placeholders
@@ -283,8 +390,57 @@ class GoogleSlides(GoogleDriveFile):
         
         # Apply text replace to the created mapping
         self.batch_text_replace(text_mapping=df_mapping, pages_ids=[page_id]) 
+        
+    def insert_image(self, image_url, page_id, object_id=None, transform=None, size=None):
+        """Insert image inside of a page.
+        The image needs to be publicly accessible, within size limit and in supported formats.
+        You can insert an image from Google Drive by getting the download_url of the GoogleDriveFile object.
+
+        Args:
+            image_url (str): URL of the image.
+            page_id (str): ID of the page where to insert the image.
+            object_id (str, optional): ID of the image object. Defaults to None (i.e. assigned by the API).
+            transform (dict, optional): Optional transformations. Defaults to None.
+            size (float, optional): Sizing of image. Defaults to None.
+
+        Returns:
+            str: ID of image element.
+        """
+        requests = [
+            {
+                'createImage': {
+                    'objectId': object_id,
+                    'url': image_url,
+                    'elementProperties': {
+                        'pageObjectId': page_id,
+                        'transform': transform,
+                        'size': size
+                    },
+                }
+            },
+        ]
+
+        try: 
+            response = self.execute_batch_update(requests)
+            print('Inserted image in page with ID {}.'.format(page_id))
+        except errors.HttpError as error:
+            print('An error occurred: %s' % error)
+            
+        return response.get('replies')[0].get('createImage').get('objectId')
 
     def replace_shape_with_image(self, placeholder_text, image_url):
+        """Replace shape with placeholder with image.
+        
+        Placeholders are constructed as {{placeholder_text}}, thus here only write the text inside the parenthesis.
+        The image needs to be publicly accessible, within size limit and in supported formats.
+        You can insert an image from Google Drive by getting the download_url of the GoogleDriveFile object.
+
+        Args:
+            placeholder_text (str): Placeholder text to replace.
+            image_url (str): URL of the image.
+        """
+        
+        # TODO: CHeck if the pages can be limited as in replace_text
         requests = [
             {
                 "replaceAllShapesWithImage": {
@@ -298,21 +454,25 @@ class GoogleSlides(GoogleDriveFile):
         try: 
             self.execute_batch_update(requests)
             print('Shape replaced with image.')
-            # Update presentation info
-            # self.__presentation_info = self.services.get('slides').presentations().get(presentationId=self.file_id, fields='*').execute()
         except errors.HttpError as error:
             print('An error occurred: %s' % error)
-            
-    def replace_shape_with_drive_image(self, placeholder_text, image_file_id):
-        image_file = GoogleDriveFile(file_id=image_file_id)
-        image_url = image_file._info.get('webContentLink')
-        self.replace_shape_with_image(placeholder_text=placeholder_text,
-                                      image_url=image_url)
         
     def replace_shape_with_chart(self, placeholder_text, 
                                 spreadsheet_id, chart_id, 
                                 linking_mode='NOT_LINKED_IMAGE', 
                                 pages_ids=[]):
+        """Replace shape with placeholder with a chart from a Google Sheets file.
+        
+        Placeholders are constructed as {{placeholder_text}}, thus here only write the text inside the parenthesis.
+        See https://developers.google.com/slides/api/reference/rest/v1/presentations/request#LinkingMode_1 for the two linking_mode options.
+
+        Args:
+            placeholder_text (str): Placeholder text to replace.
+            spreadsheet_id (str): ID of a Google Sheets file.
+            chart_id (str): ID of chart inside of the Google Sheets file.
+            linking_mode (str, optional): Mode of linking presentatation to spreadsheet chart. Defaults to 'NOT_LINKED_IMAGE'.
+            pages_ids (list, optional): List of page IDs where to perform replacement. Defaults to [] (i.e. all).
+        """
         
         assert linking_mode in ['NOT_LINKED_IMAGE', 'LINKED'], 'See https://developers.google.com/slides/api/reference/rest/v1/presentations/request#LinkingMode_1 for the two linking_mode options.'
         
@@ -332,8 +492,6 @@ class GoogleSlides(GoogleDriveFile):
         try: 
             self.execute_batch_update(requests)
             print('Shape replaced with chart.')
-            # Update presentation info
-            # self.__presentation_info = self.services.get('slides').presentations().get(presentationId=self.file_id, fields='*').execute()
         except errors.HttpError as error:
             print('An error occurred: %s' % error)
 
@@ -370,6 +528,17 @@ class GoogleSlides(GoogleDriveFile):
         return objects
     
     def find_element(self, element_id, element_kinds = [], pages_ids=[]):
+        """Find the page for an element in the presentation.
+
+        Args:
+            element_id (str): ID of the element to find.
+            element_kinds (list, optional): Kind of the element to find. Defaults to [] (i.e. all).
+            pages_ids (list, optional): List of pages where the element could be. Defaults to [] (i.e. all).
+
+        Returns:
+            dict: Nested dictionary with page ID, element ID and finally the kind.
+        """
+        
         if pages_ids==[]:
             pages_ids = self.slides_ids
         if element_kinds==[]:
@@ -389,6 +558,30 @@ class GoogleSlides(GoogleDriveFile):
         element_info = {key:value for key, value in objects.items() if value != {}}
         
         return element_info
+    
+    def transform_element(self, element_id, transform, apply_mode='ABSOLUTE'):
+        """Transform an element.
+        
+        Args:
+            element_id (str): ID of the element to transform.
+            transform (dict): Dictionary with the transformations to be performed.
+            apply_mode (str, optional): How to apply transformation (https://developers.google.com/slides/api/reference/rest/v1/presentations/request#ApplyMode). Defaults to 'ABSOLUTE'.
+
+        Returns:
+            dict: Response of batch update.
+        """
+        requests = [
+            {
+                'updatePageElementTransform': {
+                    'objectId': element_id,
+                    'transform': transform,
+                    'applyMode': apply_mode
+                }
+            },
+        ]
+
+        response = self.execute_batch_update(requests)
+        return response
     
     def get_shapes_placeholders(self, pages_ids=[]):
         """Get placeholders in shape objects.
@@ -419,72 +612,32 @@ class GoogleSlides(GoogleDriveFile):
                 shapes[slide_id] = page_shapes
  
         return shapes
-    
-    def table_to_df(self, page_id, table_id='', column_names=True):
-        """Extract text from a table into a pandas DataFrame.
+        
+    def duplicate_object(self, object_id):
+        """Duplicate a presentation object.
 
         Args:
-            page_id (str): ID of the page where the table is located
-            table_id (str, optional): ID of the table. It must be given if more than one table exists in the page. Defaults to '' (i.e. only table in page).
-            column_names (bool, optional): Whether the first row should be considered as the table column names. Defaults to True.
-
-        Raises:
-            ValueError: If the indicated page has more than one table but the table ID is not specified.
-            ValueError: If the table ID dos not exist in the indicated page.
+            object_id (str): ID of the object to duplicate.
 
         Returns:
-            pandas.DataFrame: Text from table.
+            str: ID of the new object.
         """
         
-        # Get information about tables in the indicated page
-        tables = self.get_elements_ids(element_kinds=['table'], pages_ids=[page_id])
-        tables_ids = list(next(iter(tables.values())).keys())
-
-        if table_id == '':
-            # If there is only one table in the page, you can leave ID empty, otherwise you need to to indicate it to correctly identify the table
-            if len(tables_ids) != 1:
-                raise ValueError('The indicated page has more than one table, need to given also the objectId of the table.')
-            else:
-                table_id = tables_ids[0]
-        elif isinstance(table_id, str):
-            if table_id not in tables_ids:
-                raise ValueError('Could not find a table with that table_id. Check the indicated value.')
-            
-        # Get rows of the table
-        table = [object for object in self.slides.get(page_id).get('pageElements') if object.get('objectId') == table_id][0]
-        table_rows = table.get('table').get('tableRows')
-
-        # Go through every row and its cells to extract text
-        table_text = list()
-        for row in table_rows:
-            row_text = list()
-            for cell in row.get('tableCells'):
-                cell_text = cell.get('text').get('textElements')[1].get('textRun').get('content')
-                cell_text = re.search('\{\{([^)]+)\}\}', cell_text).group(1)
-                row_text.append(cell_text)
-            table_text.append(row_text)
-
-        # Transform nested list into pandas DataFrame
-        if column_names == True:
-            columns = table_text[0]
-            data = table_text[1:]
-            table_df = pd.DataFrame(data, columns=columns)
-        elif column_names == False:
-            table_df = pd.DataFrame(table_text)
-            
-        return table_df
-    
-    def duplicate_object(self, object_id):
         requests = [{'duplicateObject': {'objectId': object_id}},]
         try: 
-            self.execute_batch_update(requests)
+            response = self.execute_batch_update(requests)
             print('Object with ID "{}" duplicated.'.format(object_id))
-            # Update presentation info
-            # self.__presentation_info = self.services.get('slides').presentations().get(presentationId=self.file_id, fields='*').execute()
         except errors.HttpError as error:
             print('An error occurred: %s' % error)
+        return response.get('replies')[0].get('duplicateObject').get('objectId')
 
     def batch_delete_object(self, objects_ids):
+        """Delete multiple objects from presentation.
+
+        Args:
+            objects_ids (list): List of IDs of objects to delete.
+        """
+        
         ids = ', '.join(objects_ids)
         requests = list()
         for id in objects_ids:
@@ -494,61 +647,40 @@ class GoogleSlides(GoogleDriveFile):
             if len(objects_ids) == 1:
                 print('Object with ID "{}" deleted.'.format(ids))
             else:
-                print('Objects with IDs "{}" deleted.'.format(ids))
-            # Update presentation info
-            # self.__presentation_info = self.services.get('slides').presentations().get(presentationId=self.file_id, fields='*').execute()       
+                print('Objects with IDs "{}" deleted.'.format(ids))    
         except errors.HttpError as error:
             print('An error occurred: %s' % error)
-            
-    def batch_delete_text(self, objects_ids):
-        ids = ', '.join(objects_ids)
-        requests = list()
-        for id in objects_ids:
-            requests.append({'deleteText': {'objectId': id}})
-        try: 
-            self.execute_batch_update(requests)
-            if len(objects_ids) == 1:
-                print('Text in object with ID "{}" deleted.'.format(ids))
-            else:
-                print('Text in objects with IDs "{}" deleted.'.format(ids))
-            # Update presentation info
-            # self.__presentation_info = self.services.get('slides').presentations().get(presentationId=self.file_id, fields='*').execute()
-        except errors.HttpError as error:
-            print('An error occurred: %s' % error)
-                        
+                                    
     def format_table(self, table_id, execute=True, text=True,
                     fill_color={'red':1, 'green':1, 'blue': 1}, text_color={'red':0, 'green':0, 'blue': 0},
                     text_bold=False, text_font='Arial', text_size=12,
                     header=True, header_rows=1, header_cols=0, header_fill_color='DARK1',
                     header_text_color='LIGHT1', header_text_bold=True, header_text_font='', header_text_size=14):
-        """Format table background color and text, and if desidered also of header.
+        """Format table background color and text and, if desidered, also of header.
+        
+        The color parameters can be either a dictionary with the values of red, green and blue to use or the name of one of the master colors.
 
         Args:
-            table_id (_type_): _description_
-            page_id (str, optional): _description_. Defaults to ''.
-            requests (bool, optional): _description_. Defaults to False.
+            table_id (str): ID of the table to format.
+            execute (bool, optional): Whether to execute or to return the requests list. Defaults to True.
             text (bool, optional): Whether also to format text, because when there is no text in the table, formatting it will not change anything. Defaults to True.
-            fill_color (dict, optional): _description_. Defaults to {'red':1, 'green':1, 'blue': 1}.
-            text_color (dict, optional): _description_. Defaults to {'red':0, 'green':0, 'blue': 0}.
-            text_bold (bool, optional): _description_. Defaults to False.
-            text_font (str, optional): _description_. Defaults to 'Arial'.
-            text_size (int, optional): _description_. Defaults to 12.
-            header (bool, optional): _description_. Defaults to True.
-            header_rows (int, optional): _description_. Defaults to 1.
-            header_cols (int, optional): _description_. Defaults to 0.
-            header_fill_color (str, optional): _description_. Defaults to 'DARK1'.
-            header_text_color (str, optional): _description_. Defaults to 'LIGHT1'.
-            header_text_bold (bool, optional): _description_. Defaults to True.
-            header_text_font (str, optional): _description_. Defaults to ''.
-            header_text_size (int, optional): _description_. Defaults to 14.
+            fill_color (str or dict, optional): Color to fill the table. Defaults to {'red':1, 'green':1, 'blue': 1} (i.e. white).
+            text_color (str or dict, optional): Color for the table text. Defaults to {'red':0, 'green':0, 'blue': 0} (i.e. black).
+            text_bold (bool, optional): Whether table text should be bold. Defaults to False.
+            text_font (str, optional): Font of the table text. Defaults to 'Arial'.
+            text_size (int, optional): Size of the table text. Defaults to 12.
+            header (bool, optional): Whether to format the header differently. Defaults to True.
+            header_rows (int, optional): How many rows should be included in header. Defaults to 1.
+            header_cols (int, optional): How many columns should be included in header. Defaults to 0.
+            header_fill_color (str or dict, optional): Color to fill the header, if header is True. Defaults to 'DARK1'.
+            header_text_color (str or dict, optional): Color for the header text, if header is True. Defaults to 'LIGHT1'.
+            header_text_bold (bool, optional): Whether the header text should be bold. Defaults to True.
+            header_text_font (str, optional): Font of the header text. Defaults to '' (i.e. first master font).
+            header_text_size (int, optional): Size of the header text. Defaults to 14.
 
         Returns:
             list: If requests is set to True, it returns the list of requests. Otherwise it executes them and prints confirmation.
         """
-        
-        # if page_id == '':
-        #     element_info = self.find_element(element_id='table_id', element_kinds = ['table'])
-        #     page_id = list(element_info.keys())[0]
         
         table = Table(slides_file=self, table_id=table_id)  
         
@@ -607,7 +739,7 @@ class GoogleSlides(GoogleDriveFile):
             self.__presentation_info = self.services.get('slides').presentations().get(presentationId=self.file_id, fields='*').execute()
             print('Formatted table with ID {}.'.format(table_id))
         
-    def create_table(self, page_id, n_rows, n_cols, update=True,
+    def insert_table(self, page_id, n_rows, n_cols,
                      header=True, header_rows=1, header_cols=0, fill_color='DARK1'):
         """Add a table to a slide.
         The parameters header_rows, header_cols and fill_color are only used only used if header is True. 
@@ -637,12 +769,24 @@ class GoogleSlides(GoogleDriveFile):
                                                header_fill_color=fill_color)
             self.execute_batch_update(header_request)
         
-        if update==True:
-            self.__presentation_info = self.services.get('slides').presentations().get(presentationId=self.file_id, fields='*').execute()
         print('Created table in page {page} with ID {table}.'.format(page=page_id, table=table_id))
         return table_id   
     
     def fill_table(self, df, table_id, execute=True, column_names=True, row_index=0, col_index=0):
+        """Fill table with text from a pandas DataFrame.
+
+        Args:
+            df (pandas.DataFrame): DataFrame where to take the values from.
+            table_id (str): ID of the table.
+            execute (bool, optional):  Whether to execute or to return the requests list. Defaults to True.
+            column_names (bool, optional): Whether to include the DataFrame column names in the table. Defaults to True.
+            row_index (int, optional): From which row index to start the value imputation. Defaults to 0.
+            col_index (int, optional): From which column index to start the value imputation. Defaults to 0.
+
+        Returns:
+            list: If requests is set to True, it returns the list of requests. Otherwise it executes them and prints confirmation.
+        """
+        
         if column_names == True:
             df = pd.DataFrame(np.vstack([df.columns, df]))
         
@@ -678,6 +822,31 @@ class GoogleSlides(GoogleDriveFile):
                     text_bold=False, text_font='Arial', text_size=12,
                     header=True, header_rows=1, header_cols=0, header_fill_color='DARK1',
                     header_text_color='LIGHT1', header_text_bold=True, header_text_font='', header_text_size=14):
+        """Insert table from a pandas DataFrame.
+
+        Args:
+            df (pandas.DataFrame): DataFrame to insert.
+            page_id (str): ID of the page where to insert the table.
+            fill_color (str or dict, optional): Color to fill the table. Defaults to {'red':1, 'green':1, 'blue': 1} (i.e. white).
+            text_color (str or dict, optional): Color for the table text. Defaults to {'red':0, 'green':0, 'blue': 0} (i.e. black).
+            text_bold (bool, optional): Whether table text should be bold. Defaults to False.
+            text_font (str, optional): Font of the table text. Defaults to 'Arial'.
+            text_size (int, optional): Size of the table text. Defaults to 12.
+            header (bool, optional): Whether to format the header differently. Defaults to True.
+            header_rows (int, optional): How many rows should be included in header. Defaults to 1.
+            header_cols (int, optional): How many columns should be included in header. Defaults to 0.
+            header_fill_color (str or dict, optional): Color to fill the header, if header is True. Defaults to 'DARK1'.
+            header_text_color (str or dict, optional): Color for the header text, if header is True. Defaults to 'LIGHT1'.
+            header_text_bold (bool, optional): Whether the header text should be bold. Defaults to True.
+            header_text_font (str, optional): Font of the header text. Defaults to '' (i.e. first master font).
+            header_text_size (int, optional): Size of the header text. Defaults to 14.
+
+        Raises:
+            ValueError: If page_id is not one of the current presentation.
+
+        Returns:
+            str: ID of the newly created table.
+        """
         
         assert isinstance(df, pd.DataFrame), 'df must be a pandas DataFrame.'
         if page_id not in self.slides_ids:
@@ -687,21 +856,10 @@ class GoogleSlides(GoogleDriveFile):
         df = pd.DataFrame(np.vstack([df.columns, df]))
         
         # Create table
-        table_id = self.create_table(page_id=page_id, n_rows=len(df.index), n_cols=len(df.columns), update=False, header=False)
+        table_id = self.insert_table(page_id=page_id, n_rows=len(df.index), n_cols=len(df.columns), header=False)
         
         # Fill table with values from dataframe
-        requests = self.fill_table(df=df, table_id=table_id, execute=False, column_names=False)
-        
-        # requests = list()
-        # for row in range(n_rows):
-        #     for col in range(n_cols):
-        #         cell = df.iloc[row, col]
-        #         requests.append({"insertText": {"objectId": table_id,
-        #                                         "cellLocation": {
-        #                                             "rowIndex": row,
-        #                                             "columnIndex": col},
-        #                                         "text": str(cell),
-        #                                         "insertionIndex": 0}})  
+        requests = self.fill_table(df=df, table_id=table_id, execute=False, column_names=False)  
                 
         # Format table
         requests += self.format_table(table_id=table_id, execute=False, text=True,
@@ -715,8 +873,6 @@ class GoogleSlides(GoogleDriveFile):
             self.execute_batch_update(requests)
         except Warning:
             print('Cell filling and/or formatting was unsuccessful, but table was still created.')
-        # self.execute_batch_update(requests)
-        self.__presentation_info = self.services.get('slides').presentations().get(presentationId=self.file_id, fields='*').execute()
 
         return table_id 
         

@@ -1,10 +1,14 @@
 import re, webbrowser
 import pandas as pd
 from apiclient import errors
-from dev.drive import GoogleDriveFile
+from drive import GoogleDriveFile
 from GoogleApiSupport import auth, apis
 
 class GoogleSheets(GoogleDriveFile):
+    """A Google Sheets file.
+
+    This class enherits attributes, properties and methods from GoogleDriveFile and expands with spreadsheet-only capabilities.
+    """
     
     services = {api_name: auth.get_service(api_name) for api_name in apis.api_configs}
     
@@ -17,23 +21,23 @@ class GoogleSheets(GoogleDriveFile):
         super().__init__(file_id=file_id)
         
         # Additional spreadsheet specific info
-        spreadsheet_info = self.services.get('sheets').spreadsheets().get(spreadsheetId=file_id, fields='*').execute()
+        self.__spreadsheet_info = self.services.get('sheets').spreadsheets().get(spreadsheetId=file_id, fields='*').execute()
         
         # TODO: Update python version to >= 3.9 and do z = x | y
-        self.__file_info = {**self.__file_info, **spreadsheet_info}
+        # self.__file_info = {**self.__file_info, **spreadsheet_info}
  
     # Additional properties with respect to GoogleDriveFile
     @property
     def locale(self):
-        return self.__file_info.get('properties').get('locale')
+        return self.__spreadsheet_info.get('properties').get('locale')
     
     @property
     def timezone(self):
-        return self.__file_info.get('properties').get('timezone')
+        return self.__spreadsheet_info.get('properties').get('timezone')
     
     @property
     def sheets(self):
-        return {sheet.get('properties').get('sheetId'):{key:value for key, value in sheet.get('properties').items() if key != 'sheetId'} for sheet in self.__file_info.get('sheets')}
+        return {sheet.get('properties').get('sheetId'):{key:value for key, value in sheet.get('properties').items() if key != 'sheetId'} for sheet in self.__spreadsheet_info.get('sheets')}
     
     @property
     def sheets_ids(self):
@@ -43,18 +47,51 @@ class GoogleSheets(GoogleDriveFile):
     def sheets_names(self):
         return [sheet.get('title') for sheet in self.sheets.values()]
     
+    @property
+    def sheets_urls(self):
+        return {'https://docs.google.com/spreadsheets/d/' + self.file_id + '/edit#gid=' + sheet_id for sheet_id in self.sheets_ids}
+    
     # Export chart as image/pdf
     # Currently not possible, proposed here: https://issuetracker.google.com/issues/230039395?pli=1
     # With Javascript: https://stackoverflow.com/questions/61491782/how-to-download-charts-in-png-from-google-sheet
     
     @classmethod
     def create(cls, file_name, parent_folder_id=None, transfer_permissions=False, **kwargs):
+        """Class method to create a Google Sheets file.
+
+        Args:
+            file_name (str): Name of new file.
+            parent_folder_id (str, optional): ID of parent folder. Defaults to None.
+            transfer_permissions (bool, optional): Whether to copy permissions from parent folder. Defaults to False.
+            
+        Returns:
+            GoogleSheets object.
+        """
         new_file = super().create(file_name=file_name, 
                                   mime_type='application/vnd.google-apps.spreadsheet',
                                   parent_folder_id=parent_folder_id, 
                                   transfer_permissions=transfer_permissions, 
                                   **kwargs)
         return new_file
+    
+    def execute_batch_update(self, requests):
+        """Applies one or more updates to the spreadsheet.
+        Implementation of: https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets/batchUpdate.
+        Beside updating the spreadsheet, it also updates the __spreadsheet_info attribute.
+
+        Args:
+            requests (list): List of update requests.
+
+        Returns:
+            dict: Response to the update requests.
+        """
+        
+        body = {'requests': requests}
+        response = self.services.get('sheets').spreadsheets().batchUpdate(spreadsheetId=self.file_id,
+                                                                          body=body).execute()
+        # Update presentation info
+        self.__spreadsheet_info = self.services.get('sheets').spreadsheets().get(spreadsheetId=self.file_id, fields='*').execute()
+        return response
         
     def add_sheet(self, sheet_name, index=None):
         """Adds a new page to an existing spreadsheet.
@@ -62,20 +99,21 @@ class GoogleSheets(GoogleDriveFile):
         Args:
             sheet_name (str): The desired name for the new sheet.
             index (int): The desired index where to place the sheet. If not given, defaults to the end.
+            
+        Returns:
+            str: ID of the new sheet.
         """
         
         index = len(self.sheets) if index is None else index
                
-        request = {'requests': [{'addSheet':{'properties':{'title': sheet_name, 
-                                                           'index': index}}}]}
-        
+        requests = [{'addSheet':{'properties':{'title': sheet_name,
+                                               'index': index}}}]  
         try:
-            sheet_info = self.services.get('sheets').spreadsheets().batchUpdate(spreadsheetId=self.file_id, body=request).execute()
-            spreadsheet_info = self.services.get('sheets').spreadsheets().get(spreadsheetId=self.file_id, fields='sheets').execute()
-            self.sheets = {sheet.get('properties').get('sheetId'):{key:value for key, value in sheet.get('properties').items() if key != 'sheetId'} for sheet in spreadsheet_info.get('sheets')}
+            response = self.execute_batch_update(requests)
             print('Sheet {name} created at index {index}.'.format(name=sheet_name, index=index))
         except errors.HttpError as error:
             print('An error occurred: %s' % error)
+        return response.get('replies')[0].get('addSheet').get('objectId')
         
     # TODO: add method to move sheet to different position
     
@@ -86,26 +124,12 @@ class GoogleSheets(GoogleDriveFile):
             sheet_id (int): ID of the sheet to remove.
         """
         
-        request = {"requests": [{"deleteSheet": {"sheetId": sheet_id}}]}
-        sheet_info = self.services.get('sheets').spreadsheets().batchUpdate(spreadsheetId=self.file_id, body=request).execute()
-        spreadsheet_info = self.services.get('sheets').spreadsheets().get(spreadsheetId=self.file_id, fields='sheets').execute()
-        self.sheets = {sheet.get('properties').get('sheetId'):{key:value for key, value in sheet.get('properties').items() if key != 'sheetId'} for sheet in spreadsheet_info.get('sheets')}
-       
-    def sheet_url(self, sheet_id):
-        """Return URL of specific sheet inside the presentation
-
-        Args:
-            sheet_id (str): ID of the sheet.
-
-        Raises:
-            ValueError: If given sheet ID is not included in the presentation.
-
-        Returns:
-            str: URL of the given sheet.
-        """
-        if sheet_id not in self.sheets_ids:
-            raise ValueError('This Sheet ID does not exist in this spreadsheet. Check the values from the attribute "sheets_ids" for the list of IDs.')
-        return 'https://docs.google.com/spreadsheets/d/' + self.file_id + '/edit#gid=' + str(sheet_id)
+        requests = [{"deleteSheet": {"sheetId": sheet_id}}]
+        try:
+            response = self.execute_batch_update(requests)
+            print('Sheet with ID {} deleted.'.format(sheet_id))
+        except errors.HttpError as error:
+            print('An error occurred: %s' % error)
         
     def open(self, sheet_id=None, new=0, autoraise=True):
         """Method that opens a sheet in the browser.

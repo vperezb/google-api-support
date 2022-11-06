@@ -1,4 +1,4 @@
-from dev import utils
+import utils
 from numpy import isnan
 
 class Table:
