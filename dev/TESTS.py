@@ -147,67 +147,10 @@ df = pd.DataFrame({'var1': [1, 2, 3],
 
 presentation.df_to_table(df=df, page_id=page_id, text_color={'red':1, 'green':1, 'blue': 1}, fill_color={'red':0, 'green':0, 'blue': 0})
 
-table_id='SLIDES_API414104160_0'
-df = pd.DataFrame(np.vstack([df.columns, df]))
-n_rows = len(df.index)
-n_cols = len(df.columns)
+table_id='SLIDES_API312852455_0'
 
-
-requests = list()
-for row in range(n_rows):
-    for col in range(n_cols):
-        cell = df.iloc[row, col]
-        requests.append({"insertText": {"objectId": table_id,
-                                        "cellLocation": {
-                                            "rowIndex": row,
-                                            "columnIndex": col},
-                                        "text": str(cell),
-                                        "insertionIndex": 0}})  
-        
-table = Table(slides_file=presentation, table_id=table_id)        
-
-# Fill cells
-if header == True:
-    requests.append(table.fill_header(header_rows=header_rows, header_cols=header_cols, fill_color=header_fill_color))
-    row_index = header_rows
-    col_index = header_cols
-    row_span = table.n_rows - header_rows
-    col_span = table.n_cols - header_cols
-else:
-    row_index = 0
-    col_index = 0
-    row_span = table.n_rows
-    col_span = table.n_cols
-if isinstance(fill_color, dict):
-    fill=utils.get_rgb_color(color_dict=fill_color)
-elif isinstance(fill_color, str):
-    fill=utils.validate_color(slides_file=self, color_type=fill_color)
-requests.append(table.fill_cells(row_span=row_span, col_span=col_span, 
-                                    rgb_color=fill, 
-                                    row_index=row_index, col_index=col_index))
-
-
-
-
-
-
-header_rows=1
-header_cols=1
-
-n_rows=4
-n_cols=3
-
-from dev.utils import validate_color
-rgb_color = validate_color(presentation, text_color)
-text_font='Arial'
-
-from itertools import product
-
-header_rows=1
-header_cols=1
-
-result = list()
-cell_indexes = list(product(list(range(n_rows)), list(range(n_cols))))
-for cell in cell_indexes:
-    cell_type = True if cell[0] < header_rows or cell[1] < header_cols else False
-    result.append(cell_type)
+presentation.format_table(table_id, page_id, requests=False, text=False,
+                    fill_color={'red':1, 'green':1, 'blue': 1}, text_color={'red':0, 'green':0, 'blue': 0},
+                    text_bold=False, text_font='Arial', text_size=12,
+                    header=True, header_rows=1, header_cols=0, header_fill_color='DARK1',
+                    header_text_color='LIGHT1', header_text_bold=True, header_text_font='', header_text_size=14)

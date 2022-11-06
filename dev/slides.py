@@ -4,11 +4,13 @@ import numpy as np
 import re
 from itertools import chain, product
 from apiclient import errors
-from warnings import warn
+import warnings
 from dev.drive import GoogleDriveFile
 from dev import utils
 from dev.slide_table import Table
 from GoogleApiSupport import auth, apis
+
+warnings.filterwarnings("error")
 
 class GoogleSlides(GoogleDriveFile):
     
@@ -149,7 +151,7 @@ class GoogleSlides(GoogleDriveFile):
         layouts = self.layout_types
         
         if len(layouts.index) == 0:
-            warn('No specified layouts in the presentation, new slide will be of unspecified layout')
+            warnings.warn('No specified layouts in the presentation, new slide will be of unspecified layout')
             layout_type='PREDEFINED_LAYOUT_UNSPECIFIED' 
         elif layout in layouts['displayName'].to_list():
             layout_type = layouts[layouts['displayName'] == layout]['name'].values[0]
@@ -513,8 +515,99 @@ class GoogleSlides(GoogleDriveFile):
             # self.__presentation_info = self.services.get('slides').presentations().get(presentationId=self.file_id, fields='*').execute()
         except errors.HttpError as error:
             print('An error occurred: %s' % error)
-                
-    def create_table(self, page_id, n_rows, n_cols, 
+                        
+    def format_table(self, table_id, execute=True, text=True,
+                    fill_color={'red':1, 'green':1, 'blue': 1}, text_color={'red':0, 'green':0, 'blue': 0},
+                    text_bold=False, text_font='Arial', text_size=12,
+                    header=True, header_rows=1, header_cols=0, header_fill_color='DARK1',
+                    header_text_color='LIGHT1', header_text_bold=True, header_text_font='', header_text_size=14):
+        """Format table background color and text, and if desidered also of header.
+
+        Args:
+            table_id (_type_): _description_
+            page_id (str, optional): _description_. Defaults to ''.
+            requests (bool, optional): _description_. Defaults to False.
+            text (bool, optional): Whether also to format text, because when there is no text in the table, formatting it will not change anything. Defaults to True.
+            fill_color (dict, optional): _description_. Defaults to {'red':1, 'green':1, 'blue': 1}.
+            text_color (dict, optional): _description_. Defaults to {'red':0, 'green':0, 'blue': 0}.
+            text_bold (bool, optional): _description_. Defaults to False.
+            text_font (str, optional): _description_. Defaults to 'Arial'.
+            text_size (int, optional): _description_. Defaults to 12.
+            header (bool, optional): _description_. Defaults to True.
+            header_rows (int, optional): _description_. Defaults to 1.
+            header_cols (int, optional): _description_. Defaults to 0.
+            header_fill_color (str, optional): _description_. Defaults to 'DARK1'.
+            header_text_color (str, optional): _description_. Defaults to 'LIGHT1'.
+            header_text_bold (bool, optional): _description_. Defaults to True.
+            header_text_font (str, optional): _description_. Defaults to ''.
+            header_text_size (int, optional): _description_. Defaults to 14.
+
+        Returns:
+            list: If requests is set to True, it returns the list of requests. Otherwise it executes them and prints confirmation.
+        """
+        
+        # if page_id == '':
+        #     element_info = self.find_element(element_id='table_id', element_kinds = ['table'])
+        #     page_id = list(element_info.keys())[0]
+        
+        table = Table(slides_file=self, table_id=table_id)  
+        
+        requests = list()
+        
+        # Fill cells
+        if header == True:
+            requests += table.fill_header(header_rows=header_rows, header_cols=header_cols, fill_color=header_fill_color)
+            row_index = header_rows
+            col_index = header_cols
+            row_span = table.n_rows - header_rows
+            col_span = table.n_cols - header_cols
+        else:
+            row_index = 0
+            col_index = 0
+            row_span = table.n_rows
+            col_span = table.n_cols
+        if isinstance(fill_color, dict):
+            fill=utils.get_rgb_color(color_dict=fill_color)
+        elif isinstance(fill_color, str):
+            fill=utils.validate_color(slides_file=self, color_type=fill_color)
+        requests += table.fill_cells(row_span=row_span, col_span=col_span, 
+                                         rgb_color=fill, 
+                                         row_index=row_index, col_index=col_index)
+        
+        # Format cells' text
+        if text == True:
+            cell_indexes = list(product(list(range(table.n_rows)), list(range(table.n_cols))))
+            for row, col in cell_indexes:
+                # cell_type = True if cell[0] < header_rows or cell[1] < header_cols else False
+                if header == True and (row < header_rows or col < header_cols):
+                    if isinstance(header_text_color, dict):
+                        color=utils.get_rgb_color(color_dict=header_text_color)
+                    elif isinstance(header_text_color, str):
+                        color=utils.validate_color(slides_file=self, color_type=header_text_color)
+                    bold=header_text_bold
+                    font=header_text_font
+                    size=header_text_size
+                else:
+                    if isinstance(text_color, dict):
+                        color=utils.get_rgb_color(color_dict=text_color)
+                    elif isinstance(text_color, str):
+                        color=utils.validate_color(slides_file=self, color_type=text_color)
+                    bold=text_bold
+                    font=text_font
+                    size=text_size
+                requests += table.color_text_cell(row=row, col=col, 
+                                                    rgb_color=color, 
+                                                    bold=bold, 
+                                                    font=font, 
+                                                    size=size)
+        if execute == False:
+            return requests
+        elif execute == True:
+            self.execute_batch_update(requests)
+            self.__presentation_info = self.services.get('slides').presentations().get(presentationId=self.file_id, fields='*').execute()
+            print('Formatted table with ID {}.'.format(table_id))
+        
+    def create_table(self, page_id, n_rows, n_cols, update=True,
                      header=True, header_rows=1, header_cols=0, fill_color='DARK1'):
         """Add a table to a slide.
         The parameters header_rows, header_cols and fill_color are only used only used if header is True. 
@@ -537,12 +630,49 @@ class GoogleSlides(GoogleDriveFile):
         response = self.execute_batch_update(table_request)
         table_id = response.get('replies')[0].get('createTable').get('objectId')
         if header == True:
-            header_request = Table(slides_file=self, table_id=table_id)\
-                        .fill_header(header_rows=header_rows, header_cols=header_cols, fill_color=fill_color)
+            # header_request = Table(slides_file=self, table_id=table_id)\
+            #             .fill_header(header_rows=header_rows, header_cols=header_cols, fill_color=fill_color)
+            header_request = self.format_table(table_id=table_id, page_id=page_id, execute=False, text=False,
+                                               header=True, header_rows=header_rows, header_cols=header_cols,
+                                               header_fill_color=fill_color)
             self.execute_batch_update(header_request)
+        
+        if update==True:
+            self.__presentation_info = self.services.get('slides').presentations().get(presentationId=self.file_id, fields='*').execute()
         print('Created table in page {page} with ID {table}.'.format(page=page_id, table=table_id))
         return table_id   
-            
+    
+    def fill_table(self, df, table_id, execute=True, column_names=True, row_index=0, col_index=0):
+        if column_names == True:
+            df = pd.DataFrame(np.vstack([df.columns, df]))
+        
+        # If table is smaller than dataframe, fill with what fits and raise a warning
+        table = Table(self, table_id)
+        n_rows = table.n_rows
+        n_cols = table.n_cols
+        if len(df.index) < n_rows or len(df.columns) < n_cols:
+            warnings.warn('Dataframe is bigger than table, exceding cells will not be transferred.')
+        
+        # Fill table with values from dataframe
+        requests = list()
+        for row in range(n_rows):
+            for col in range(n_cols):
+                cell = df.iloc[row, col]
+                requests.append({"insertText": {"objectId": table_id,
+                                                "cellLocation": {
+                                                    "rowIndex": row_index+row,
+                                                    "columnIndex": col_index+col},
+                                                "text": str(cell),
+                                                "insertionIndex": 0}}) 
+        
+        if execute == False:
+            return requests
+        elif execute == True:
+            self.execute_batch_update(requests)
+            # https://stackoverflow.com/questions/18425225/getting-the-name-of-a-variable-as-a-string
+            print('Table with ID {table} has been filled with data from DataFrame {df}.'.format(table=table_id,
+                                                                                                df=f'{df=}'.split('=')[0])) 
+        
     def df_to_table(self, df, page_id, 
                     fill_color={'red':1, 'green':1, 'blue': 1}, text_color={'red':0, 'green':0, 'blue': 0},
                     text_bold=False, text_font='Arial', text_size=12,
@@ -553,82 +683,40 @@ class GoogleSlides(GoogleDriveFile):
         if page_id not in self.slides_ids:
             raise ValueError('page_id must be an existing ID of a slide in this presentation.')
         
-        # Convert column names into first row and get number of rows and columns
+        # Convert column names into first row
         df = pd.DataFrame(np.vstack([df.columns, df]))
-        n_rows = len(df.index)
-        n_cols = len(df.columns)
         
         # Create table
-        table_id = self.create_table(page_id=page_id, n_rows=n_rows, n_cols=n_cols, header=False)
+        table_id = self.create_table(page_id=page_id, n_rows=len(df.index), n_cols=len(df.columns), update=False, header=False)
         
         # Fill table with values from dataframe
-        requests = list()
-        for row in range(n_rows):
-            for col in range(n_cols):
-                cell = df.iloc[row, col]
-                requests.append({"insertText": {"objectId": table_id,
-                                                "cellLocation": {
-                                                    "rowIndex": row,
-                                                    "columnIndex": col},
-                                                "text": str(cell),
-                                                "insertionIndex": 0}})  
+        requests = self.fill_table(df=df, table_id=table_id, execute=False, column_names=False)
+        
+        # requests = list()
+        # for row in range(n_rows):
+        #     for col in range(n_cols):
+        #         cell = df.iloc[row, col]
+        #         requests.append({"insertText": {"objectId": table_id,
+        #                                         "cellLocation": {
+        #                                             "rowIndex": row,
+        #                                             "columnIndex": col},
+        #                                         "text": str(cell),
+        #                                         "insertionIndex": 0}})  
                 
-        table = Table(slides_file=self, table_id=table_id)        
-        
-        # Fill cells
-        if header == True:
-            requests.append(table.fill_header(header_rows=header_rows, header_cols=header_cols, fill_color=header_fill_color))
-            row_index = header_rows
-            col_index = header_cols
-            row_span = table.n_rows - header_rows
-            col_span = table.n_cols - header_cols
-        else:
-            row_index = 0
-            col_index = 0
-            row_span = table.n_rows
-            col_span = table.n_cols
-        if isinstance(fill_color, dict):
-            fill=utils.get_rgb_color(color_dict=fill_color)
-        elif isinstance(fill_color, str):
-            fill=utils.validate_color(slides_file=self, color_type=fill_color)
-        requests.append(table.fill_cells(row_span=row_span, col_span=col_span, 
-                                         rgb_color=fill, 
-                                         row_index=row_index, col_index=col_index))
-        
-        # Format cells' text
-        cell_indexes = list(product(list(range(n_rows)), list(range(n_cols))))
-        for row, col in cell_indexes:
-            # cell_type = True if cell[0] < header_rows or cell[1] < header_cols else False
-            if header == True and (row < header_rows or col < header_cols):
-                if isinstance(header_text_color, dict):
-                    color=utils.get_rgb_color(color_dict=header_text_color)
-                elif isinstance(header_text_color, str):
-                    color=utils.validate_color(slides_file=self, color_type=header_text_color)
-                bold=header_text_bold
-                font=header_text_font
-                size=header_text_size
-            else:
-                if isinstance(text_color, dict):
-                    color=utils.get_rgb_color(color_dict=text_color)
-                elif isinstance(text_color, str):
-                    color=utils.validate_color(slides_file=self, color_type=text_color)
-                bold=text_bold
-                font=text_font
-                size=text_size
-            requests.append(table.color_text_cell(row=row, col=col, 
-                                                  rgb_color=color, 
-                                                  bold=bold, 
-                                                  font=font, 
-                                                  size=size))
-        
-        # # Add header
-        # if header == True:
-        #     requests.append(table.fill_header(header_rows=header_rows, header_cols=header_cols, fill_color=header_fill_color))
-        #     requests.append(table.color_text_header(header_rows=header_rows, header_cols=header_cols,
-        #                                            text_color=header_text_color, text_bold=header_text_bold,
-        #                                            text_font=header_text_font, text_size=header_text_size))
-
-        self.execute_batch_update(requests)
+        # Format table
+        requests += self.format_table(table_id=table_id, execute=False, text=True,
+                                          fill_color=fill_color, text_color=text_color,
+                                          text_bold=text_bold, text_font=text_font, text_size=text_size,
+                                          header=header, header_rows=header_rows, header_cols=header_cols,
+                                          header_fill_color=header_fill_color, header_text_color=header_text_color,
+                                          header_text_bold=header_text_bold, header_text_font=header_text_font,
+                                          header_text_size=header_text_size)
+        try:
+            self.execute_batch_update(requests)
+        except Warning:
+            print('Cell filling and/or formatting was unsuccessful, but table was still created.')
+        # self.execute_batch_update(requests)
+        self.__presentation_info = self.services.get('slides').presentations().get(presentationId=self.file_id, fields='*').execute()
 
         return table_id 
         
