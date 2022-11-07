@@ -18,6 +18,8 @@ items = results.get('items', [])
 for item in items:
     print(u'{0} ({1})'.format(item['title'], item['id']))
     
-task_list = service.tasklists().get(tasklist='MTMyNDg3MzI1NzkyMDMwNzc3NTM6MDow').execute()
+    
+list_id = 'MDQ5OTQxMDY3NDQyMDg1MTc5MjI6MDow'
+task_list = service.tasklists().get(tasklist=list_id).execute()
 
-tasks = service.tasks().list(tasklist='MTMyNDg3MzI1NzkyMDMwNzc3NTM6MDow').execute()
+tasks = service.tasks().list(tasklist=list_id).execute()
