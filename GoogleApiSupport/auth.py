@@ -78,7 +78,8 @@ def get_service(api_name, service_credentials_path=None,
     return service
 
 
-def get_service_credentials_path(service_credentials_path=''):
+def get_service_credentials_path(service_credentials_path=None):
+    folder_service_credentials_path = os.path.join(os.path.expanduser('~'), '.credentials', 'service_credentials.json')
     if service_credentials_path:
         service_credentials_path = service_credentials_path
         logging.info('Trying to use credentials from ' + 'Method 0: Path from function argument | ' + service_credentials_path)
@@ -88,23 +89,26 @@ def get_service_credentials_path(service_credentials_path=''):
     elif os.environ.get('SERVICE_CREDENTIALS_PATH'): ## TO DO: DELETE - DEPRECATED
         service_credentials_path = os.environ['SERVICE_CREDENTIALS_PATH']
         logging.warning('Trying to use credentials from ' +  'Method 2 (deprecated): Environment variable SERVICE_CREDENTIALS_PATH | ' + service_credentials_path)
-    else:
-        service_credentials_path = os.path.join(os.path.expanduser('~'), '.credentials', 'service_credentials.json')
+    elif os.path.isfile(folder_service_credentials_path):
+        service_credentials_path = folder_service_credentials_path
         logging.info('Tying to use credentials from ' + 'Method 3: Default path for credentials ~/.credentials/service_credentials.json | ' + service_credentials_path + ' | Nor path passed neither environment variables, take a look into `docs/setup_credentials.md` file')      
-      
+    else :
+        return None
+    
     if (os.path.isfile(service_credentials_path)):
         logging.info('Found file credentials in' + service_credentials_path)
         return service_credentials_path     
         
         
-def get_oauth_credentials_path(oauth_credentials_path=''):
+def get_oauth_credentials_path(oauth_credentials_path=None):
     if oauth_credentials_path:
         oauth_credentials_path = oauth_credentials_path
         logging.info('Trying to use credentials from ' + 'Method 0: Path from function argument | ' + oauth_credentials_path)
     elif os.environ.get('GOOGLE_OAUTH_CREDENTIALS'):
         oauth_credentials_path = os.environ['GOOGLE_OAUTH_CREDENTIALS']
         logging.info('Trying to use credentials from ' + 'Method 1: Environment variable GOOGLE_OAUTH_CREDENTIALS | ' + oauth_credentials_path)     
-      
+    else: 
+        return None
     if (os.path.isfile(oauth_credentials_path)):
         logging.info('Found file credentials in' + oauth_credentials_path)
         return oauth_credentials_path
