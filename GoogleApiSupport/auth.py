@@ -15,14 +15,29 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from GoogleApiSupport import apis
 
 
-def get_service(api_name, service_credentials_path=None, oauth_credentials_path=None, additional_apis=[]):
-    """
-    First section of this function checks credentials for service accounts. If no service account credentials are present,
-    it will then check for OAuth credentials. If no OAuth creds found, it will error. 
+def get_service(api_name, service_credentials_path=None, 
+                oauth_credentials_path=None, additional_apis=[]):
+    """ First section of this function checks credentials for service accounts. 
+        If no service account credentials are present, 
+        it will then check for OAuth credentials. If no OAuth credentials found, it will error. 
+
+
+    Args:
+        api_name (_type_): _description_
+        service_credentials_path (_type_, optional): _description_. Defaults to None.
+        oauth_credentials_path (_type_, optional): _description_. Defaults to None.
+        additional_apis (list, optional): Some times a request needs access to multiple scopes.
+            Here you can add as many as you want. Apis must be in apis.py file in order to be allowed.
+            Defaults to [].
+
+    Returns:
+        _type_: Authenticated service to query against apis.
     """
     service_credentials_path = get_service_credentials_path(service_credentials_path)
+    oauth_credentials_path = get_oauth_credentials_path(oauth_credentials_path)
     service = None
     scopes = apis.get_api_config(api_name)['scope']
+    
     if additional_apis:
         scopes = [scopes]
         for additional_api_name in additional_apis:
@@ -36,45 +51,32 @@ def get_service(api_name, service_credentials_path=None, oauth_credentials_path=
         )
 
         service = build(apis.get_api_config(api_name)['build'],
-            apis.get_api_config(api_name)['version'],
-            http=credentials.authorize(Http()),
-            cache_discovery=False
-        )
-
-        return service
+                        apis.get_api_config(api_name)['version'],
+                        http=credentials.authorize(Http()),
+                        cache_discovery=False
+                        )
+        logging.info(f'Using authorisation via service_credentials found on `{service_credentials_path}`')
        
-    elif not service_credentials_path: 
-        oauth_credentials_path = get_oauth_credentials_path(oauth_credentials_path)
+    elif not service_credentials_path and oauth_credentials_path:
         # we enable at once all the scopes needed when using the lib, otherwise we'll need to manage
         # deleting old token.json files when changing from one scope to the other
         scopes = apis.all_scopes()
         
-        creds = None
-        # The file token.json stores the user's access and refresh tokens, and is
-        # created automatically when the authorization flow completes for the first
-        # time.
-        if os.path.exists('token.json'):
-            creds = Credentials.from_authorized_user_file('token.json', scopes)
-        # If there are no (valid) credentials available, let the user log in.
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-            else:
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    oauth_credentials_path, scopes)
-                creds = flow.run_local_server(port=0)
-            # Save the credentials for the next run
-            with open('token.json', 'w') as token:
-                token.write(creds.to_json())
+        credentials = oauth_credentials_from_file(oauth_credentials_path, scopes)
 
         service = build(apis.get_api_config(api_name)['build'],
-        apis.get_api_config(api_name)['version'],
-        credentials=creds)
-        if not service:
-            logging.error(' UNABLE TO RETRIEVE CREDENTIALS | Expected credential paths: ' + ', '.join(
-                oauth_credentials_path) + ' | More info in project Documentation folder setup_credentials.md file')
+                        apis.get_api_config(api_name)['version'],
+                        credentials=credentials
+                        )
+        logging.info(f'Using authorisation via oauth_credentials found on `{oauth_credentials_path}`')
+        
+    elif not (service_credentials_path or oauth_credentials_path):
+        raise Exception('UNABLE TO FIND OAUTH OR SERVICE CREDENTIALS FILE | \
+                        Environment variable not defined or file from provided path does not exist | \
+                        More info in project folder docs/setup_credentials.md')
 
-        return service
+    return service
+
 
 def get_service_credentials_path(service_credentials_path=None):
     if service_credentials_path:
@@ -92,9 +94,7 @@ def get_service_credentials_path(service_credentials_path=None):
       
     if (os.path.isfile(service_credentials_path)):
         logging.info('Found file credentials in' + service_credentials_path)
-        return service_credentials_path
-
-        
+        return service_credentials_path     
         
         
 def get_oauth_credentials_path(oauth_credentials_path=None):
@@ -108,8 +108,34 @@ def get_oauth_credentials_path(oauth_credentials_path=None):
     if (os.path.isfile(oauth_credentials_path)):
         logging.info('Found file credentials in' + oauth_credentials_path)
         return oauth_credentials_path
-    else:
-        raise Exception('UNABLE TO FIND OAUTH OR SERVICE CREDENTIALS FILE | Environment variable not defined or file from provided path does not exist | More info in project docs folder setup_credentials.md file')
+    
 
-        
+def oauth_credentials_from_file(oauth_credentials_path, scopes, local_credentials_path = 'token.json'):
+    """_summary_
 
+    Args:
+        oauth_credentials_path (str): The path from the credentials oauth file.
+        scopes (list): _description_
+        local_credentials_path (str, optional): _description_. Defaults to 'token.json'.
+
+    Returns:
+        _type_: _description_
+    """
+    credentials = None
+    # The file token.json stores the user's access and refresh tokens, and is
+    # created automatically when the authorization flow completes for the first
+    # time.
+    if os.path.exists(local_credentials_path):
+        credentials = Credentials.from_authorized_user_file(local_credentials_path, scopes)
+    # If there are no (valid) credentials available, let the user log in.
+    if not credentials or not credentials.valid:
+        if credentials and credentials.expired and credentials.refresh_token:
+            credentials.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                oauth_credentials_path, scopes)
+            credentials = flow.run_local_server(port=0)
+        # Save the credentials for the next run
+        with open(local_credentials_path, 'w') as token:
+            token.write(credentials.to_json())
+    return credentials
