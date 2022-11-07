@@ -6,7 +6,7 @@ import os
 
 # Credentials
 ROOT_DIR=os.getcwd()
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = os.path.join(ROOT_DIR, ".credentials/service_credentials.json")
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = os.path.join(ROOT_DIR, ".oauth_credentials/credentials.json")
 
 from dev import drive
 from dev import sheets
@@ -124,65 +124,6 @@ shapes = slides.get_all_shapes_placeholders(presentation_id='1lg-skFt676nQdQ0tUb
 presentation = slides.GoogleSlides(file_id='1lg-skFt676nQdQ0tUbb_3y4F8_82-hKacEj23unuxdk')
 
 
+from GoogleApiSupport import auth
 
-
-# Add table
-page_id='SLIDES_API1209340472_0'
-n_rows=3
-n_cols=11
-header=True
-color='DARK1'
-
-from dev.slide_table import Table
-from dev import utils
-
-fill_request = Table(slides_file=presentation, table_id='SLIDES_API1459332045_0').fill_header()
-text_request = Table(slides_file=presentation, table_id='SLIDES_API1459332045_0').color_text_header()
-
-presentation.execute_batch_update(text_request)
-
-df = pd.DataFrame({'var1': [1, 2, 3],
-                   'var2': [4, 5, 6],
-                   'var3': [7, 8 , 9]})
-
-presentation.df_to_table(df=df, page_id=page_id, text_color={'red':1, 'green':1, 'blue': 1}, fill_color={'red':0, 'green':0, 'blue': 0})
-
-table_id='SLIDES_API312852455_0'
-
-presentation.format_table(table_id, page_id, requests=False, text=False,
-                    fill_color={'red':1, 'green':1, 'blue': 1}, text_color={'red':0, 'green':0, 'blue': 0},
-                    text_bold=False, text_font='Arial', text_size=12,
-                    header=True, header_rows=1, header_cols=0, header_fill_color='DARK1',
-                    header_text_color='LIGHT1', header_text_bold=True, header_text_font='', header_text_size=14)
-
-url='https://upload.wikimedia.org/wikipedia/commons/4/41/Sunflower_from_Silesia2.jpg'
-object_id = None
-transform=None
-size=None
-
-requests = [
-    {
-        'createImage': {
-            'objectId': object_id,
-            'url': url,
-            'elementProperties': {
-                'pageObjectId': page_id,
-                'transform': transform,
-                'size': size
-            },
-        }
-    },
-]
-
-response = presentation.execute_batch_update(requests)
-
-response.get('replies')[0].get('createImage').get('objectId')
-
-help(presentation)
-
-result = presentation.find_element(element_id='SLIDES_API1025621154_0')
-
-response = presentation.duplicate_object(page_id)
-response.keys()
-
-list(result.keys())[0]
+auth.get_service('drive', additional_apis=['sheets'])
