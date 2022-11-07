@@ -32,7 +32,7 @@ api_configs = {
         "version": "v1"
     },
     "gmail": {
-        "scope": "https://www.googleapis.com/auth/gmail",
+        "scope": "https://www.googleapis.com/auth/gmail.modify",
         "build": "gmail",
         "version": "v1"
     },
