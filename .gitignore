@@ -5,6 +5,7 @@
 # Credentials
 .credentials
 token.pickle
+token.json
 
 # Python
 *.pyc

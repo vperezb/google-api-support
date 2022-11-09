@@ -1,6 +1,7 @@
 import os, sys, subprocess
 import pandas as pd
 from numpy import isnan
+import datetime as dt
 import mimetypes
 import openxmllib # https://pythonhosted.org/openxmllib/mimetypes-adds.html
 from GoogleApiSupport import auth
@@ -155,4 +156,13 @@ def validate_color(slides_file, color_type):
     if not isnan(float(row['blue'])):
         rgb_color.update({'blue':float(row['blue'])})
     return rgb_color
+
+def from_timestamp_to_rfc339(timestamp_text, start_format='%Y-%m-%d %H:%M:%S'):
+    datetime_obj = dt.datetime.strptime(timestamp_text, start_format)
+    rfc339_text = datetime_obj('%Y-%m-%dT%H:%M:%S.000Z')
+    return rfc339_text
+
+
+
+
 
