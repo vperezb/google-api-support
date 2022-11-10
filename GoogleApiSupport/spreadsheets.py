@@ -35,6 +35,7 @@ def get_info(spreadsheet_id, include_grid_data=False):
         include_grid_data (bool): Passed to False, the function does not query the spreadsheet data, only the document information.
     Returns:
         dict: Object with a lot of sheet information such title, url, colors, alignment and much more.
+    Deprecates: sheets.get_sheet_info
     """
     service = auth.get_service("spreadsheets")
     response = service.spreadsheets().get(spreadsheetId=spreadsheet_id, includeGridData=include_grid_data).execute()
@@ -72,6 +73,7 @@ def add_sheet(spreadsheet_id, sheet_name):
 
     Returns:
         dict: Full response object from the Google API
+    Deprecates: sheets.add_sheet_to_spreadsheet
     """
 
     service = auth.get_service("spreadsheets")
@@ -85,7 +87,6 @@ def add_sheet(spreadsheet_id, sheet_name):
     ]}
 
     response = service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=data).execute()
-    #SHEET_ID = res['replies'][0]['addSheet']['properties']['sheet_id']
     return response
 
 
@@ -95,6 +96,7 @@ def change_title(spreadsheet_title, spreadsheet_id):
     Args:
         spreadsheet_title (str): The new title we want to set to the spreadsheet
         spreadsheet_id (str): The id from the Spreadsheet. Long string with letters, numbers and characters
+    Deprecates: sheets.change_sheet_title
     """
     service = auth.get_service("spreadsheets")
 
@@ -152,7 +154,7 @@ def pandas_to_sheet(spreadsheet_id, page_name, df, starting_cell='A1'):
         starting_cell (str, optional): The cell in the sheet where the data will be uploaded. Defaults to 'A1'.
 
     Returns:
-        _type_: _description_
+        dict: A response object
     """
 
     service = auth.get_service("spreadsheets")
@@ -174,12 +176,12 @@ def pandas_to_sheet(spreadsheet_id, page_name, df, starting_cell='A1'):
             'data': data
         }
 
-        result = service.spreadsheets().values().batchUpdate(
+        response = service.spreadsheets().values().batchUpdate(
             spreadsheetId=spreadsheet_id,
             body=body
         ).execute()
 
-        return 'True'
+        return response
 
     except Exception as e:
         print(e)
@@ -231,12 +233,8 @@ def get_sheet_charts(spreadsheet_id, sheet_name):
             return sheet_page['charts']
 
 
-def save_sheet_to_pandas(spreadsheet_id, sheet_name='', sheet_range='', index='', has_header=True ):
-    """spreadsheet_id - Id of the desired document
-        sheet_name - Name of the desired page 'Hoja1' (by default: first page)
-        sheet_range - Range of the desired info 'A1:C6' (optional) (by default: WHOLE PAGE)
-        index - column you want to be the index of the resulting dataframe (optional) (by default: none of the columns is set as index)
-
+def download_sheet_to_pandas(spreadsheet_id, sheet_name='', sheet_range='', index='', has_header=True ):
+    """Downloads and instances a pd.DataFrame object with the sheets values. Parameters are important to manage the format of the info.
     Args:
         spreadsheet_id (_type_): Id of the desired document
         sheet_name (str, optional): Name of the desired page 'Hoja1'. (by default: first page). Defaults to ''.
@@ -246,30 +244,31 @@ def save_sheet_to_pandas(spreadsheet_id, sheet_name='', sheet_range='', index=''
 
     Returns:
         pd.DataFrame: The output dataframe.
+    Deprecates: sheets.sheet_to_pandas
     """
     service = auth.get_service("spreadsheets")
     if (sheet_range != ''):
         sheet_range = '!'+sheet_range
 
-    newresult = service.spreadsheets().values().get(
+    response = service.spreadsheets().values().get(
         spreadsheetId=spreadsheet_id,
         valueRenderOption='FORMATTED_VALUE',
         range=sheet_name+sheet_range
     ).execute()
 
     if has_header:
-        headers = newresult['values'].pop(0)
+        headers = response['values'].pop(0)
     else:
         max_len = 0 
-        for row in newresult['values']:
+        for row in response['values']:
             if len(row) > max_len:
                 max_len = len(row)
         headers = __get_range_column_names(max_len)
 
     if (index == ''):
-        return pd.DataFrame(newresult['values'], columns=headers)
+        return pd.DataFrame(response['values'], columns=headers)
     else:
-        return pd.DataFrame(newresult['values'], columns=headers).set_index(index, drop=False)
+        return pd.DataFrame(response['values'], columns=headers).set_index(index, drop=False)
 
 
 def clear_sheet(spreadsheet_id, sheet_name, sheet_range=''):
@@ -284,32 +283,37 @@ def clear_sheet(spreadsheet_id, sheet_name, sheet_range=''):
     if (sheet_range != ''):
         sheet_range = '!'+sheet_range
 
-    newresult = service.spreadsheets().values().clear(
+    response = service.spreadsheets().values().clear(
         spreadsheetId=spreadsheet_id,
         range=sheet_name+sheet_range
     ).execute()
+    return response
 
 # Complementary functions
 
 def __get_column_name(n):
+    """Given a numbers returns the name of a column following
+        the known spreadsheet naming: A, B, C, D, ..., AA, AB.
 
-	# initialize output string as empty
-	result = ''
+    Args:
+        n (int): number of column you want to retrieve
 
-	while n > 0:
+    Returns:
+        str: The letter of the desired column. Index 0 corresponds to `A`, and 25 corresponds to `Z`
+    """
+	
+    result = ''
+ 
+    while n > 0:
+        
+        index = (n - 1) % 26
+        result += chr(index + ord('A'))
+        n = (n - 1) // 26
+    return result[::-1]
 
-		# find the index of the next letter and concatenate the letter
-		# to the solution
-
-		# here index 0 corresponds to `A`, and 25 corresponds to `Z`
-		index = (n - 1) % 26
-		result += chr(index + ord('A'))
-		n = (n - 1) // 26
-
-	return result[::-1]
 
 def __get_range_column_names(r):
     output = []
-    for i in range(r):
+    for i in range(1,r+1):
         output.append(__get_column_name(i))
     return output
