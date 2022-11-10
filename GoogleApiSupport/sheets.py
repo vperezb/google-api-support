@@ -68,7 +68,6 @@ def add_sheet_to_spreadsheet(sheetId, newSheetName):
     ]}
 
     response = service.spreadsheets().batchUpdate(spreadsheetId=sheetId, body=data).execute()
-    #SHEET_ID = res['replies'][0]['addSheet']['properties']['sheetId']
     return response
 
 
