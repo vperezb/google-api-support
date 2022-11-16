@@ -2,6 +2,7 @@ import re, webbrowser
 import pandas as pd
 from apiclient import errors
 from dev.drive import GoogleDriveFile
+from dev.slides import GoogleSlides
 from GoogleApiSupport import auth, apis
 
 class GoogleSheets(GoogleDriveFile):
@@ -47,11 +48,7 @@ class GoogleSheets(GoogleDriveFile):
     @property
     def sheets_urls(self):
         return {'https://docs.google.com/spreadsheets/d/' + self.file_id + '/edit#gid=' + sheet_id for sheet_id in self.sheets_ids}
-    
-    # Export chart as image/pdf
-    # Currently not possible, proposed here: https://issuetracker.google.com/issues/230039395?pli=1
-    # With Javascript: https://stackoverflow.com/questions/61491782/how-to-download-charts-in-png-from-google-sheet
-    
+        
     @classmethod
     def create(cls, file_name, parent_folder_id=None, transfer_permissions=False, **kwargs):
         """Class method to create a Google Sheets file.
@@ -90,29 +87,38 @@ class GoogleSheets(GoogleDriveFile):
         self.__spreadsheet_info = self.services.get('sheets').spreadsheets().get(spreadsheetId=self.file_id, fields='*').execute()
         return response
         
-    def add_sheet(self, sheet_name, index=None):
+    def add_sheet(self, sheet_name, index=-1):
         """Adds a new page to an existing spreadsheet.
 
         Args:
             sheet_name (str): The desired name for the new sheet.
-            index (int): The desired index where to place the sheet. If not given, defaults to the end.
+            index (int): Index where to add new sheet. Defaults to -1 (i.e. end of presentation).
             
         Returns:
             str: ID of the new sheet.
         """
         
-        index = len(self.sheets) if index is None else index
+        number = len(self.sheets) + index + 1 if index < 0 else index
                
         requests = [{'addSheet':{'properties':{'title': sheet_name,
-                                               'index': index}}}]  
+                                               'index': number}}}]  
         try:
             response = self.execute_batch_update(requests)
-            print('Sheet {name} created at index {index}.'.format(name=sheet_name, index=index))
+            print('Sheet {name} created at index {index}.'.format(name=sheet_name, index=number))
+            return response.get('replies')[0].get('addSheet').get('objectId')
         except errors.HttpError as error:
             print('An error occurred: %s' % error)
-        return response.get('replies')[0].get('addSheet').get('objectId')
         
-    # TODO: add method to move sheet to different position
+    def move_sheet(self, sheet_id, new_index=-1):
+        number = len(self.sheets) + new_index + 1 if new_index < 0 else new_index
+        requests = [{'updateSheetProperties': {'properties':{"sheetId": sheet_id,
+                                                             'index': number},
+                                               'fields': 'index'}}] 
+        try:
+            response = self.execute_batch_update(requests)
+            print('Sheet with ID {id} moved to index {index}.'.format(id=sheet_id, index=number))
+        except errors.HttpError as error:
+            print('An error occurred: %s' % error)
     
     def delete_sheet(self, sheet_id):
         """Delete a sheet from the existing spreadsheet.
@@ -278,3 +284,23 @@ class GoogleSheets(GoogleDriveFile):
             print('Data from {} deleted.'.format(sheet_name+sheet_range))
         except errors.HttpError as error:
             print('An error occurred: %s' % error)
+            
+    # Export chart as image/pdf
+    # Currently not possible, proposed here: https://issuetracker.google.com/issues/230039395?pli=1
+    # With Javascript: https://stackoverflow.com/questions/61491782/how-to-download-charts-in-png-from-google-sheet
+    def download_chart(self, chart_id, destination_folder='', file_name=None, open_file=False):
+        
+        # Create new presentation
+        presentation = GoogleSlides.create(file_name='Temp')
+        page_id = list(presentation.slides.keys())[0]
+        # Add chart to presentation
+        chart = presentation.insert_chart(spreadsheet_id=self.file_id, 
+                                          chart_id=chart_id, 
+                                          page_id=page_id)
+        # Download image
+        presentation.download_image(image_id=chart,
+                                    destination_folder=destination_folder,
+                                    file_name=file_name, open_file=open_file)
+        # Delete created presentation
+        presentation.delete()
+        

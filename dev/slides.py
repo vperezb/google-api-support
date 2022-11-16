@@ -401,7 +401,7 @@ class GoogleSlides(GoogleDriveFile):
             page_id (str): ID of the page where to insert the image.
             object_id (str, optional): ID of the image object. Defaults to None (i.e. assigned by the API).
             transform (dict, optional): Optional transformations. Defaults to None.
-            size (float, optional): Sizing of image. Defaults to None.
+            size (dict, optional): Sizing of image. Defaults to None.
 
         Returns:
             str: ID of image element.
@@ -423,10 +423,9 @@ class GoogleSlides(GoogleDriveFile):
         try: 
             response = self.execute_batch_update(requests)
             print('Inserted image in page with ID {}.'.format(page_id))
+            return response.get('replies')[0].get('createImage').get('objectId')
         except errors.HttpError as error:
             print('An error occurred: %s' % error)
-            
-        return response.get('replies')[0].get('createImage').get('objectId')
 
     def replace_shape_with_image(self, placeholder_text, image_url):
         """Replace shape with placeholder with image.
@@ -454,6 +453,67 @@ class GoogleSlides(GoogleDriveFile):
         try: 
             self.execute_batch_update(requests)
             print('Shape replaced with image.')
+        except errors.HttpError as error:
+            print('An error occurred: %s' % error)
+    
+    def insert_chart(self, spreadsheet_id, chart_id, page_id,
+                     object_id=None, transform=None, size=None,
+                     linking_mode='NOT_LINKED_IMAGE'):
+        """Insert chart from a Google Sheets file inside of a page.
+
+        Args:
+            spreadsheet_id (str): ID of a Google Sheets file.
+            chart_id (str): ID of chart inside of the Google Sheets file.
+            page_id (str): ID of the page where to insert the image.
+            object_id (str, optional): ID of the image object. Defaults to None (i.e. assigned by the API).
+            transform (dict, optional): Optional transformations. Defaults to None.
+            size (dict, optional): Sizing of image. Defaults to None.
+            linking_mode (str, optional): Mode of linking presentatation to spreadsheet chart. Defaults to 'NOT_LINKED_IMAGE'.
+
+        Returns:
+            str: ID of chart element.
+        """
+        
+        if size is None:
+            emu4m = {
+                    'magnitude': 4000000,
+                    'unit': 'EMU'
+                    }
+            size = {
+                    'height': emu4m,
+                    'width': emu4m
+                    }
+
+        
+        if transform is None:
+            transform = {
+                        'scaleX': 1,
+                        'scaleY': 1,
+                        'translateX': 100000,
+                        'translateY': 100000,
+                        'unit': 'EMU'
+                        }
+        
+        requests = [
+            {
+                'createSheetsChart': {
+                    'objectId': object_id,
+                    'spreadsheetId': spreadsheet_id,
+                    'chartId': chart_id,
+                    'linkingMode': linking_mode,
+                    'elementProperties': {
+                        'pageObjectId': page_id,
+                        'size': size,
+                        'transform': transform
+                    }
+                }
+            }
+        ]
+
+        try: 
+            response = self.execute_batch_update(requests)
+            print('Inserted chart in page with ID {}.'.format(page_id))
+            return response.get('replies')[0].get('createSheetsChart').get('objectId')
         except errors.HttpError as error:
             print('An error occurred: %s' % error)
         
@@ -536,7 +596,7 @@ class GoogleSlides(GoogleDriveFile):
             pages_ids (list, optional): List of pages where the element could be. Defaults to [] (i.e. all).
 
         Returns:
-            dict: Nested dictionary with page ID, element ID and finally the kind.
+            dict: Nested dictionary with page ID as key and element information as value.
         """
         
         if pages_ids==[]:
@@ -559,6 +619,19 @@ class GoogleSlides(GoogleDriveFile):
         
         return element_info
     
+    def download_image(self, image_id, destination_folder='', file_name=None, open_file=False):
+        # Get URL
+        image = self.find_element(element_id=image_id, element_kinds=['image'])
+        if len(image) == 0:
+            raise ValueError('Image with ID {} does not exist.'.format(image_id))
+        elif len(image) > 1:
+            raise ValueError('Multiple images with ID {} found.'.format(image_id))
+        image_info = list(image.values())[0]
+        url = image_info.get('image').get('contentUrl')
+        # Download image
+        utils.download_image_from_url(image_url=url, destination_folder=destination_folder,
+                                      file_name=file_name, open_file=open_file)
+        
     def transform_element(self, element_id, transform, apply_mode='ABSOLUTE'):
         """Transform an element.
         

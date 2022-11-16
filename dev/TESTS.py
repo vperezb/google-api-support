@@ -6,8 +6,12 @@ import os
 
 # Credentials
 ROOT_DIR=os.getcwd()
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = os.path.join(ROOT_DIR, ".oauth_credentials/credentials.json")
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = os.path.join(ROOT_DIR, ".service_credentials/credentials.json")
 
+# Doing this to import local versions
+import sys
+sys.path.append('../GoogleApiSupport')
+from GoogleApiSupport import apis, auth
 from dev import drive
 from dev import sheets
 from dev import slides
@@ -127,3 +131,53 @@ presentation = slides.GoogleSlides(file_id='1lg-skFt676nQdQ0tUbb_3y4F8_82-hKacEj
 from GoogleApiSupport import auth
 
 auth.get_service('drive', additional_apis=['sheets'])
+
+
+
+# Credentials
+import os
+ROOT_DIR=os.getcwd()
+# os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = os.path.join(ROOT_DIR, ".credentials/service_credentials.json")
+os.environ['GOOGLE_OAUTH_CREDENTIALS'] = os.path.join(ROOT_DIR, ".oauth_credentials/credentials.json")
+
+# Doing this to import local versions
+import sys
+sys.path.append('../GoogleApiSupport')
+from GoogleApiSupport import apis, auth
+
+from dev import slides
+from dev import sheets
+from dev import drive
+
+
+
+
+slides_id = '1eHfgugjfymloWLd9IUkiJlqaVmS-VmVJdCQNl0AFT0Q'
+sheets_id = '1cuNDHr7gvZeA0srrXgAHtPfC_WraWP2l_5H3SGwKICQ'
+
+sheets_file = sheets.GoogleSheets(file_id=sheets_id)
+vars(sheets_file).keys()
+sheets_file._GoogleSheets__spreadsheet_info.get('sheets')[0].get('charts')[0].get('chartId')
+
+sheets_file.download_chart(chart_id='148582788', open_file=True)
+
+sheets_file.add_sheet(sheet_name='Testing the move')
+requests = [{'updateSheetProperties': {'properties':{"sheetId": '460050652',
+                                                            'index': 0},
+                                       'fields': 'index'}}] 
+sheets_file.execute_batch_update(requests)
+
+sheets_file.move_sheet(sheet_id='460050652', new_index=0)
+
+move_sheet
+
+slides_file = slides.GoogleSlides(file_id=slides_id)
+slides_file.replace_shape_with_chart(placeholder_text='chart',
+                                     spreadsheet_id=sheets_id,
+                                     chart_id='148582788')
+
+slides_file.slides_ids
+chart_id = slides_file.insert_chart(spreadsheet_id=sheets_id,
+                                chart_id='148582788',
+                                page_id='g16bd45dcd4f_0_1')
+

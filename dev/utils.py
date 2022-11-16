@@ -2,8 +2,11 @@ import os, sys, subprocess
 import pandas as pd
 from numpy import isnan
 import datetime as dt
+from dateutil import parser
 import mimetypes
 import openxmllib # https://pythonhosted.org/openxmllib/mimetypes-adds.html
+from urllib.request import urlretrieve, urlopen
+from urllib.parse import urlparse
 from GoogleApiSupport import auth
 from apiclient import errors
 import sys
@@ -15,6 +18,7 @@ def start_file(path):
     Args:
         path (str): Location path of file to open.
     """
+    
     if sys.platform == "win32":
         os.startfile(path)
     else:
@@ -72,9 +76,14 @@ def drive_about(fields='*'):
     Returns:
         dict: Dictionary with the requested fields.
     """
+    
     service = auth.get_service("drive")
     drive_about = service.about().get(fields='*').execute()
     return drive_about
+
+def mime_type_extention_map():
+    mime_types_map = {v: k for k, v in mimetypes.types_map.items()}
+    return mime_types_map
 
 def google_export_types():
     """Get dataframe of export MIME types for Google Workspace files.
@@ -87,6 +96,9 @@ def google_export_types():
     - Google Slides: .pptx
     - Google Script: ...
     - Google Sheets: .xlsx
+    
+    Returns:
+        pandas.DataFrame: DataFrame with information on MIME types for Google Workspace files.
     """
     
     # Getting drive export formats
@@ -98,8 +110,8 @@ def google_export_types():
     export_formats.dropna(inplace=True)
     
     # Map MIME types to extensions
-    mime_types_map = {v: k for k, v in mimetypes.types_map.items()}
-    export_formats['extension'] = export_formats['to_mime_type'].map(mime_types_map)
+    # mime_types_map = {v: k for k, v in mimetypes.types_map.items()}
+    export_formats['extension'] = export_formats['to_mime_type'].map(mime_type_extention_map())
 
     # Set default formats for the export
     export_defaults = {'application/vnd.google-apps.document':['application/vnd.openxmlformats-officedocument.wordprocessingml.document',True],
@@ -128,9 +140,25 @@ def google_export_types():
 
 # https://developers.google.com/slides/api/concepts/page-elements
 def page_element_kinds():
+    """List of slides page element kinds.
+
+    Returns:
+        list: Page element kinds.
+    """
     return ['elementGroup', 'shape', 'image', 'video', 'line', 'table', 'wordArt', 'sheetsChart']
 
 def get_rgb_color(color_dict):
+    """Get RGB color dictionary.
+    
+    It checks that the keys are correct (red, green, blue) and keeps only those that exist.
+
+    Args:
+        color_dict (dict): Dictionary with RGT colors.
+
+    Returns:
+        dict: RGB color dictionary.
+    """
+    
     assert not all([color_dict.get('red') is None, color_dict.get('green') is None, color_dict.get('blue') is None]), 'At least one of red, green, blue needs to be provided in the dictionary.'
     rgb_color = {key:float(value) for key, value in color_dict.items() if key in ['red', 'green', 'blue'] and not (value is None or isnan(value))}
     return rgb_color
@@ -157,10 +185,64 @@ def validate_color(slides_file, color_type):
         rgb_color.update({'blue':float(row['blue'])})
     return rgb_color
 
-def from_timestamp_to_rfc339(timestamp_text, start_format='%Y-%m-%d %H:%M:%S'):
-    datetime_obj = dt.datetime.strptime(timestamp_text, start_format)
-    rfc339_text = datetime_obj('%Y-%m-%dT%H:%M:%S.000Z')
-    return rfc339_text
+def to_rfc339(value, dayfirst=False, yearfirst=False):
+    """Transform datetime or string to RFC399 timestamp string.
+    
+    For details on dayfirst and yearfirst check https://dateutil.readthedocs.io/en/stable/parser.html#dateutil.parser.parserinfo.
+
+    Args:
+        value (str or datimetime.date or datetime.datetime): Date/datetime string or a date/datetime object.
+        dayfirst (bool): Whether to interpret the first value in an ambiguous 3-integer date as the day (True) or month (False). Defaults to False.
+        yearfirst (bool):  Whether to interpret the first value in an ambiguous 3-integer date as the year. Defaults to False.
+
+    Raises:
+        ValueError: If value is not a string or a date/datetime object.
+
+    Returns:
+        str: RFC399 timestamp string.
+    """
+    
+    if isinstance(value, str):
+        value_dt = parser.parse(value, parserinfo=parser.parserinfo(dayfirst, yearfirst))
+    elif isinstance(value, dt.datetime):
+        value_dt = value
+    elif isinstance(value, dt.date):
+        value_dt = value
+    else:
+        raise ValueError('The value can either be a date/datetime string or a date/datetime object.')
+    # Transform into a RFC 3339 timestamp string
+    rfc399_string = value_dt.strftime('%Y-%m-%dT%H:%M:%S.000Z') 
+    return rfc399_string
+
+def download_image_from_url(image_url, destination_folder='', file_name=None, open_file=False):
+    """Download image from URL to local path.
+
+    Args:
+        image_url (str): URL of image.
+        destination_folder (str, optional): Folder where to download the file. Defaults to ''.
+        file_name (str, optional): Name of the file downloaded. Defaults to None, in which case it takes the original name.
+        open_file (bool, optional): Whether to open the downloaded file. Defaults to False.
+    """
+    
+    path = urlparse(image_url).path
+    base_name = os.path.basename(path)
+    # It doesn't have information on file name and extension
+    if os.path.splitext(base_name)[1] == '':
+        if file_name is not None:
+            destination_path = os.path.join(destination_folder, file_name)
+        else:
+            content_type = urlopen(image_url).info().get('Content-Type')
+            extension = mime_type_extention_map().get(content_type)
+            destination_path = os.path.join(destination_folder, 'image'+extension)
+    else:
+        if file_name is not None:
+            destination_path = os.path.join(destination_folder, file_name)
+        else:
+            destination_path = os.path.join(destination_folder, base_name)
+    urlretrieve(image_url, destination_path)
+    if open_file:
+        start_file(path=destination_path)
+
 
 
 

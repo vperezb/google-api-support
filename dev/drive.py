@@ -23,7 +23,7 @@ class GoogleDriveFile:
     def __init__(self, file_id=None):
         if file_id is not None: 
             # File information 
-            self.__file_info = self.service.files().get(fileId=file_id, fields='*').execute()
+            self.__file_info = self._update_info(file_id)
 
     # Properties
     @property
@@ -70,9 +70,10 @@ class GoogleDriveFile:
         
         file_metadata = {
             'name': file_name,
-            'mimeType': mime_type,
-            'parents': [parent_folder_id],
+            'mimeType': mime_type
         }
+        if parent_folder_id is not None:
+            file_metadata.update({'parents': [parent_folder_id]})
 
         try:
             new_file_id = cls.service.files().create(body=file_metadata,
@@ -112,7 +113,7 @@ class GoogleDriveFile:
         """Add new permission to file or change current one.
 
         Args:
-            perm_type (str): Permission type, it can be the value 'user', 'group', 'domain', 'anyone' or 'default'.
+            perm_type (str): Permission type, it can be the value 'user', 'group', 'domain' or 'anyone'.
             role (str): Role, it can be the value 'owner', 'writer' or 'reader'
             email_address (str, optional): User or group e-mail address (needed if perm_type is 'user' or 'group'). Defaults to None.
             domain (str, optional): Domain name (needed if perm_type is 'domain'). Defaults to None.
@@ -122,7 +123,7 @@ class GoogleDriveFile:
             shared_to = email_address
         elif perm_type == 'domain':
             shared_to = domain
-        elif perm_type in ('anyone', 'default'):
+        elif perm_type == 'anyone':
             shared_to = perm_type
         
         new_permission = {
@@ -136,13 +137,49 @@ class GoogleDriveFile:
                                                                         body=new_permission, 
                                                                         fields='*',
                                                                         **kwargs).execute()
-            new_permission_id = new_permission_resource.get('id')
-            # If permission is changed, remove old version
-            if new_permission_id in [perm.get('id') for perm in self.permissions]:
-                old_permission = [perm for perm in self.permissions if perm.get('id') == new_permission_id][0]
-                self.permissions.remove(old_permission)
-            self.permissions.append(new_permission_resource)  
+            # new_permission_id = new_permission_resource.get('id')
+            # # If permission is changed, remove old version
+            # if new_permission_id in [perm.get('id') for perm in self.permissions]:
+            #     old_permission = [perm for perm in self.permissions if perm.get('id') == new_permission_id][0]
+            #     self.permissions.remove(old_permission)
+            # self.permissions.append(new_permission_resource) 
+            self.__file_info = self._update_info(self.file_id)
             print('Inserted {} permission for "{}"'.format(new_permission_resource.get('role'), shared_to))
+        except errors.HttpError as error:
+            print('An error occurred: %s' % error)
+            
+    def unshare(self, perm_type, role, email_address=None, domain=None, **kwargs):
+        """Removes a permission to file.
+
+        Args:
+            perm_type (str): Permission type, it can be the value 'user', 'group', 'domain' or 'anyone'.
+            role (str): Role, it can be the value 'owner', 'writer' or 'reader'
+            email_address (str, optional): User or group e-mail address (needed if perm_type is 'user' or 'group'). Defaults to None.
+            domain (str, optional): Domain name (needed if perm_type is 'domain'). Defaults to None.
+        """
+        
+        if perm_type in ('user', 'group'):
+            shared_to = email_address
+        elif perm_type == 'domain':
+            shared_to = domain
+        elif perm_type == 'anyone':
+            shared_to = perm_type
+        
+        new_permission = {
+            'type': perm_type,
+            'role': role,
+            'emailAddress': email_address,
+            'domain': domain
+        }
+        try:
+            resource = self.service.permissions().delete(fileId=self.file_id,
+                                                         body=new_permission,
+                                                         fields='*',
+                                                         **kwargs).execute()
+            # permission_id = resource.get('id')
+            # self.permissions.remove(permission_id)
+            self.__file_info = self._update_info(self.file_id)
+            print('Removed {} permission for "{}"'.format(resource.get('role'), shared_to))
         except errors.HttpError as error:
             print('An error occurred: %s' % error)
     
@@ -333,6 +370,10 @@ class GoogleDriveFile:
         print('Copying file {} with name {}'.format(self.file_id, new_file_name))
 
         return new_file
+    
+    # Helper methods
+    def _update_info(self, file_id):
+        return self.service.files().get(fileId=file_id, fields='*').execute()
        
 class GoogleDriveFolder(GoogleDriveFile):
     """A folder in GoogleDrive.
