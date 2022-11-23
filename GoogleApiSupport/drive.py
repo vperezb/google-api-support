@@ -145,7 +145,7 @@ def copy_file(file_from_id, new_file_name='', supports_all_drives=False, transfe
     return new_file_id
 
 
-def upload_image_to_drive(image_name: str, image_file_path: str, folder_destination_id='None'):
+def upload_image_to_drive(image_name: str, image_file_path: str, folder_destination_id=None):
     service = auth.get_service("drive")
 
     file = service.files().create(
@@ -158,7 +158,7 @@ def upload_image_to_drive(image_name: str, image_file_path: str, folder_destinat
         file_id=file_id)
 
     # Copy the image to destination if passed
-    if not folder_destination_id:
+    if folder_destination_id:
         move_file(file_id=file_id, folder_destination_id=folder_destination_id)
 
     return {'image_url': image_url, 'file_id': file_id}
