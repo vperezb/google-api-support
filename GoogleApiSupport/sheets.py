@@ -19,6 +19,7 @@ def get_sheet_info(sheetId, includeGridData=False):
     Returns:
         dict: Object with a lot of sheet information such title, url, colors, alignment and much more.
     """
+    logging.warning('module sheets now is named spreadsheets and this function `get_sheet_info` renamed to `get_info`')
     service = auth.get_service("sheets")
     response = service.spreadsheets().get(spreadsheetId=sheetId, includeGridData=includeGridData).execute()
     return response
@@ -56,6 +57,7 @@ def add_sheet_to_spreadsheet(sheetId, newSheetName):
     Returns:
         dict: Full response object from the Google API
     """
+    logging.warning('module sheets now is named spreadsheets and this function `add_sheet_to_spreadsheet` renamed to `add_sheet`')
 
     service = auth.get_service("sheets")
     
@@ -78,6 +80,7 @@ def change_sheet_title(newFileName, fileId):
         newFileName (str): _description_
         fileId (str): The id from the Spreadsheet. Long string with letters, numbers and characters
     """
+    logging.warning('module sheets now is named spreadsheets and this function `change_sheet_title` renamed to `change_title`')
     service = auth.get_service("sheets")
 
     body = {
@@ -189,6 +192,7 @@ def sheet_to_pandas(spreadsheetId, sheetName='', sheetRange='', index='', has_he
     Returns:
         pd.DataFrame: The output dataframe.
     """
+    logging.warning('module sheets now is named spreadsheets and this function `sheet_to_pandas` renamed to `download_sheet_to_pandas`')
     service = auth.get_service("sheets")
     if (sheetRange != ''):
         sheetRange = '!'+sheetRange
