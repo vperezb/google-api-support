@@ -11,12 +11,7 @@ api_configs = {
         "build": "drive",
         "version": "v3"
     },
-    "sheets": { # TODO Delete the sheets api_config
-        "scope": "https://www.googleapis.com/auth/spreadsheets",
-        "build": "sheets",
-        "version": "v4"
-    },
-    "spreadsheets": {
+    "sheets": {
         "scope": "https://www.googleapis.com/auth/spreadsheets",
         "build": "sheets",
         "version": "v4"
