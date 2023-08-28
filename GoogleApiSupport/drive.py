@@ -163,6 +163,24 @@ def upload_image_to_drive(image_name: str, image_file_path: str, folder_destinat
 
     return {'image_url': image_url, 'file_id': file_id}
 
+def upload_image(image_name: str, image_file_path: str, folder_destination_id=None):
+    service = auth.get_service("drive")
+
+    file = service.files().create(
+        body={'name': image_name, 'mimeType': 'image/png'}, media_body=image_file_path).execute()
+    file_id = file.get('id')
+    service.permissions().create(fileId=file_id,
+                                 body={"role": "reader", "type": "anyone", "withLink": True}).execute()
+
+    image_url = 'https://drive.google.com/uc?id={file_id}'.format(
+        file_id=file_id)
+
+    # Copy the image to destination if passed
+    if folder_destination_id:
+        move_file(file_id=file_id, folder_destination_id=folder_destination_id)
+
+    return {'image_url': image_url, 'file_id': file_id}
+
 
 def create_folder(name, parent_folder: list = list()):
     service = auth.get_service("drive")
