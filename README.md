@@ -12,10 +12,6 @@ The contributions are encouraged so the library can keep growing and help more p
 
 You can also create an issue in order to point other contributors to desired functionalities.
 
-  <a href="https://discord.gg/ZByQsmxR" target="_blank">
-    <img src="https://img.shields.io/discord/308323056592486420?logo=discord" alt="Discord Chat" />
-  </a>
-
 ## Functions avaliable
 
 * Sheets

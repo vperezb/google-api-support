@@ -1,5 +1,6 @@
 import json
-from GoogleApiSupport import auth
+import time
+from GoogleApiSupport import auth, drive
 
 
 class Size:
@@ -156,7 +157,11 @@ def replace_image(page_id: str, presentation_id: str, old_image_object: dict, ne
     delete_object(presentation_id, old_image_object['objectId'])
 
 
-def replace_shape_with_image(url: str, presentation_id: str, contains_text: str = None):
+def replace_shape_with_image(url: str, presentation_id: str, contains_text: str = None, local_image_path = None):
+    tmp_image = None
+    if url.split('/')[0].strip(':') in ('http', 'https'):
+        tmp_image = drive.upload_image('tmp_img_{}'.format(str(int(round(time.time())))), url)
+        url = tmp_image['image_url']
     requests = [
         {
             "replaceAllShapesWithImage": {
@@ -167,8 +172,9 @@ def replace_shape_with_image(url: str, presentation_id: str, contains_text: str 
                 }
             }
         }]
-
-    return execute_batch_update(requests, presentation_id)
+    response = execute_batch_update(requests, presentation_id)
+    if tmp_image: drive.delete_file(file_id=tmp_image['file_id'])
+    return response
 
 
 def batch_replace_shape_with_image(image_mapping: dict, presentation_id: str, pages=None, fill=False):
