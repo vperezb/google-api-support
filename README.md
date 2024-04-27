@@ -12,10 +12,6 @@ The contributions are encouraged so the library can keep growing and help more p
 
 You can also create an issue in order to point other contributors to desired functionalities.
 
-  <a href="https://discord.gg/ZByQsmxR" target="_blank">
-    <img src="https://img.shields.io/discord/308323056592486420?logo=discord" alt="Discord Chat" />
-  </a>
-
 ## Functions avaliable
 
 * Sheets
@@ -103,6 +99,15 @@ In order to use Google APIs you will need to authenticate, this steps guide you 
 
 `virtualenv venv`
 `pip install google-api-support`
+`pip install jupyterlab`
+`source venv/Scripts/activate`
+`export GOOGLE_APPLICATION_CREDENTIALS=C:/path/to/my/service_account_credentials.json`
+`jupyter lab`
+
+## Setup to developement
+
+`virtualenv venv`
+`pip install .`
 `pip install jupyterlab`
 `source venv/Scripts/activate`
 `export GOOGLE_APPLICATION_CREDENTIALS=C:/path/to/my/service_account_credentials.json`

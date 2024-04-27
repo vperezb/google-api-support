@@ -68,6 +68,14 @@ def get_slide_notes(slide_object: dict):
         return '# Error in slide' + str(e)
 
 
+def get_presentation_notes(presentation_id):
+    notes = {}
+    slides = get_presentation_slides(presentation_id)
+    for slide in slides:
+        notes[slide['objectId']] = get_slide_notes(slide)
+    return notes
+
+
 def execute_batch_update(requests, presentation_id, additional_apis=[]):
     body = {
         'requests': requests
@@ -377,8 +385,8 @@ def get_page_element(presentation_id, element_id):
 def get_page(presentation_id, page_id):
     presentation = get_presentation_info(presentation_id)
     for slide in presentation['slides']:
-        if slide['objectID'] == page_id:
-            return page
+        if slide['objectId'] == page_id:
+            return slide
 
 
 def replace_shape_with_chart(presentation_id: str, placeholder_text, spreadsheet_id, chart_id, linking_mode='NOT_LINKED_IMAGE', target_id_pages=[]):
