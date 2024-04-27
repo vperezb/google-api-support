@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="google-api-support",
-    version="0.1.5",
+    version="0.1.6",
     author="Víctor Pérez Berruezo",
     author_email="vperezb@proton.me",
     description="In this package you will find functions to deal with google apis. Sheets, Drive, Storage and Slides",
