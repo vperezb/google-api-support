@@ -221,11 +221,12 @@ def upload_file_to_drive(file_name: str, parent_folder_id: list, local_file_path
             media_body=media_content,
             supportsAllDrives=True).execute()
         
+        file_id = file['id']
+        file_url = f"https://drive.google.com/file/d/{file_id}/view"
+        
         if not parent_folder_id:
             service.permissions().create(fileId=file_id,
                                          body={"role": "reader", "type": "anyone", "withLink": True}).execute()
-        file_id = file['id']
-        file_url = f"https://drive.google.com/file/d/{file_id}/view"
 
     except Exception as e:
         print(f'Error: {e}')
