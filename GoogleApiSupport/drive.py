@@ -1,6 +1,7 @@
 from GoogleApiSupport import auth
 from apiclient import errors
 from googleapiclient.http import MediaFileUpload
+from googleapiclient.http import MediaIoBaseUpload
 import mimetypes
 
 # Permissions functions
