@@ -45,6 +45,7 @@ You can also create an issue in order to point other contributors to desired fun
   * Delete file
   * Copy file
   * Upload image
+  * Upload file
   * Create folder
   * List folders in folder
   * Get folder id by name
