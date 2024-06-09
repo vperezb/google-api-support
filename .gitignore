@@ -17,6 +17,7 @@ __pycache__/
 # Virtual Environments
 Env/
 venv/
+myenv/
 
 # Notebooks
 **/.ipynb_checkpoints/

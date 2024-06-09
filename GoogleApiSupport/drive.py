@@ -1,5 +1,8 @@
 from GoogleApiSupport import auth
 from apiclient import errors
+from googleapiclient.http import MediaFileUpload
+from googleapiclient.http import MediaIoBaseUpload
+import mimetypes
 
 # Permissions functions
 
@@ -180,6 +183,56 @@ def upload_image(image_name: str, image_file_path: str, folder_destination_id=No
         move_file(file_id=file_id, folder_destination_id=folder_destination_id)
 
     return {'image_url': image_url, 'file_id': file_id}
+
+
+def upload_file(file_name: str, parent_folder_id: list, local_file_path=None, buffer=None, mime_type=None):
+    """ Upload a new file of any type to the drive
+    Args:
+    file_name: the name you would like to use in google drive
+    parent_folder_id: optional list of the parent folder id. Without this, it will give access to anyone with the link
+    local_file_path: if uploading a local file, you provide the path here
+    buffer: if uploading a file stored in memory, provide a BytesIO object
+    mime_typ: required if providing a buffer, optional if using a local file path
+    Returns:
+    A dictionary with the file_url and file_id
+    """
+    service = auth.get_service("drive")
+    try:
+        if local_file_path and buffer:
+            print("Error: Please provide a local file path OR a buffer")
+            return None
+        if local_file_path:
+            if not mime_type:
+                mime_type, _ = mimetypes.guess_type(local_file_path)
+            media_content = MediaFileUpload(local_file_path)
+            request_body = {'name': file_name, 
+                            'mimeType': mime_type, 
+                           }
+        if buffer:
+            media_content = MediaIoBaseUpload(buffer, mime_type)
+            request_body = {'name': file_name, 
+                            'mimeType': mime_type, 
+                           }
+        if parent_folder_id:
+            request_body['parents'] = parent_folder_id
+        
+        file = service.files().create(
+            body=request_body, 
+            media_body=media_content,
+            supportsAllDrives=True).execute()
+        
+        file_id = file['id']
+        file_url = f"https://drive.google.com/file/d/{file_id}/view"
+        
+        if not parent_folder_id:
+            service.permissions().create(fileId=file_id,
+                                         body={"role": "reader", "type": "anyone", "withLink": True}).execute()
+
+    except Exception as e:
+        print(f'Error: {e}')
+        return None
+
+    return {'file_url': file_url, 'file_id': file_id}
 
 
 def create_folder(name, parent_folder: list = list()):
