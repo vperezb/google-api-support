@@ -185,7 +185,7 @@ def upload_image(image_name: str, image_file_path: str, folder_destination_id=No
     return {'image_url': image_url, 'file_id': file_id}
 
 
-def upload_file_to_drive(file_name: str, parent_folder_id: list, local_file_path=None, buffer=None, mime_type=None):
+def upload_file(file_name: str, parent_folder_id: list, local_file_path=None, buffer=None, mime_type=None):
     """ Upload a new file of any type to the drive
     Args:
     file_name: the name you would like to use in google drive
